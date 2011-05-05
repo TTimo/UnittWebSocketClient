@@ -21,7 +21,6 @@
 #import "WebSocket.h"
 
 
-
 @interface WebSocket(Private)
 - (void) dispatchFailure:(NSError*) aError;
 - (void) dispatchClosed:(NSError*) aWasClean;
@@ -33,6 +32,7 @@
 - (NSData*) getSHA1:(NSData*) aPlainText;
 - (void) generateSecKeys;
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
+- (NSString*) getServerProtocol:(NSString*) aResponse;
 @end
 
 
@@ -237,6 +237,25 @@ enum
     return false;
 }
 
+- (NSString*) getServerProtocol:(NSString*) aResponse
+{
+    //loop through headers looking for the protocol    
+    NSArray *listItems = [aResponse componentsSeparatedByString:@"\r\n"];
+    for (NSString* item in listItems) 
+    {
+        //if this is the protocol - return the value
+        if ([item rangeOfString:@"Sec-WebSocket-Protocol" options:NSCaseInsensitiveSearch].length)
+        {
+            NSRange range = [item rangeOfString:@":" options:NSLiteralSearch];
+            NSString* value = [item substringFromIndex:range.length + range.location];
+            return [value stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceCharacterSet]];
+        }
+    }
+    
+    return nil;
+}
+
+
 #pragma mark Web Socket Delegate
 - (void) dispatchFailure:(NSError*) aError 
 {
@@ -333,10 +352,16 @@ enum
     if (aTag == TagHandshake) 
     {
         NSString* response = [[[NSString alloc] initWithData:aData encoding:NSASCIIStringEncoding] autorelease];
-        //@todo: handle protocol and security key
-        NSLog(@"Response:%@", response);
         if ([self isUpgradeResponse: response]) 
         {
+            //grab protocol from server
+            NSString* protocol = [self getServerProtocol:response];
+            if (protocol)
+            {
+                serverProtocol = [protocol copy];
+            }
+            
+            //handle state & delegates
             readystate = WebSocketReadyStateOpen;
             [self dispatchOpened];
             [self readNextMessage];
