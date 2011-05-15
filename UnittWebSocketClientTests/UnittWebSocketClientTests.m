@@ -33,7 +33,7 @@
     
     MyWebSocketDelegate* delegate = [[[MyWebSocketDelegate alloc] initWithTest:self] autorelease];
     //we are not going to verifyAccept since Jetty is using prior web socket implementation
-    ws = [WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:delegate origin:nil protocols:nil tlsSettings:nil verifyAccept:false];
+    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:delegate origin:nil protocols:nil tlsSettings:nil verifyAccept:false] retain];
 }
 
 - (void)tearDown
@@ -51,7 +51,7 @@
 - (void) testExample
 {
     [self.ws open];
-    [self waitForSeconds:360.0];
+    [self waitForSeconds:10.0];
     STAssertEqualObjects(((MyWebSocketDelegate*) ws.delegate).response, @"Message: Blue", @"Did not find the correct phone.");
 }
 
