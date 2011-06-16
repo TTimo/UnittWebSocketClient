@@ -30,8 +30,8 @@
 - (NSData*) mask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
 - (NSData*) unmask:(int) aMask data:(NSData*) aData;
 - (NSData*) unmask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
-- (void) parseData;
-- (void) parseContentFrom:(int) aIndex length:(long long) aLength;
+- (void) parseHeader;
+- (void) parseContent;
 - (void) buildFragment;
 
 @end
@@ -45,6 +45,7 @@
 @synthesize payloadData;
 @synthesize payloadType;
 @synthesize fragment;
+@synthesize messageLength;
 
 
 #pragma mark Properties
@@ -60,12 +61,12 @@
 
 - (BOOL) isControlFrame
 {
-    return self.opCode == PayloadOpCodeClose || self.opCode == PayloadOpCodePing || self.opCode == PayloadOpCodePong;
+    return self.opCode == MessageOpCodeClose || self.opCode == MessageOpCodePing || self.opCode == MessageOpCodePong;
 }
 
 - (BOOL) isDataFrame
 {
-    return self.opCode == PayloadOpCodeContinuation || self.opCode == PayloadOpCodeText || self.opCode == PayloadOpCodeBinary;
+    return self.opCode == MessageOpCodeContinuation || self.opCode == MessageOpCodeText || self.opCode == MessageOpCodeBinary;
 }
 
 - (BOOL) isValid
@@ -78,24 +79,108 @@
     return self.payloadData && [self.payloadData length];
 }
 
+- (NSUInteger) messageLength
+{
+    if (fragment && payloadStart) 
+    {
+        return payloadStart + payloadLength;
+    }
+    
+    return 0;
+}
+
 
 #pragma mark Parsing
-- (void) parseContentFrom:(int) aIndex length:(long long) aLength
++ (PayloadLength) getPayloadLengthFromHeader:(NSData*) aHeader
+{    
+    if ([aHeader length] > 1)
+    {
+        char byte;
+        [aHeader getBytes:&byte range:NSMakeRange(1, 1)];
+        if (byte <= 125)
+        {   
+            return PayloadLengthMinimum;
+        }
+        if (byte == 126)
+        {
+            return PayloadLengthShort;
+        }
+        else if (byte == 127)
+        {
+            return PayloadLengthLong;                  
+        }
+    }
+    
+    return PayloadLengthIllegal;
+}
+
++ (BOOL) getIsMaskedFromHeader:(NSData*) aHeader
 {
-    if ([self.fragment length] >= aIndex + aLength)
+    if ([aHeader length] > 1)
+    {
+        char byte;
+        [aHeader getBytes:&byte range:NSMakeRange(1, 1)];
+        return byte & 0x80;
+    }
+    
+    return NO;
+}
+
++ (MessageOpCode) getOpCodeFromHeader:(NSData*) aHeader
+{
+    if ([aHeader length] > 0)
+    {
+        char byte;
+        [aHeader getBytes:&byte length:1];
+        return byte & 0x0F;
+    }
+    
+    return MessageOpCodeIllegal;
+}
+
++ (int) getHeaderLengthFromHeader:(NSData*) aHeader
+{
+    BOOL hdrIsMasked = [self getIsMaskedFromHeader:aHeader];
+    PayloadLength hdrPayloadLength = [self getPayloadLengthFromHeader:aHeader];
+    
+    int size = 2;
+    
+    //get payload length options
+    switch (hdrPayloadLength) 
+    {
+        case PayloadLengthShort:
+            size += 2;
+            break;
+        case PayloadLengthLong:
+            size += 6;
+            break;
+    }
+    
+    //get mask option
+    if (hdrIsMasked)
+    {
+        size += 4;
+    }
+    
+    return size;
+}
+
+- (void) parseContent
+{
+    if ([self.fragment length] >= payloadStart + payloadLength)
     {
         if (self.hasMask) 
         {
-            self.payloadData = [self mask:self.mask data:self.fragment range:NSMakeRange(aIndex, aLength)];
+            self.payloadData = [self mask:self.mask data:self.fragment range:NSMakeRange(payloadStart, payloadLength)];
         }
         else
         {
-            self.payloadData = [self.fragment subdataWithRange:NSMakeRange(aIndex, aLength)];
+            self.payloadData = [self.fragment subdataWithRange:NSMakeRange(payloadStart, payloadLength)];
         }
     }
 }
 
-- (void) parseData
+- (void) parseHeader
 {
     //get header data bits
     int bufferLength = 14;
@@ -115,54 +200,51 @@
         //handle data depending on opcode
         switch (self.opCode) 
         {
-            case PayloadOpCodeText:
+            case MessageOpCodeText:
                 self.payloadType = PayloadTypeText;
                 break;
-            case PayloadOpCodeBinary:
+            case MessageOpCodeBinary:
                 self.payloadType = PayloadTypeBinary;
                 break;
         }
         
-        //handle content, if any
-        if (self.isDataFrame)
-        {        
-            if (bufferLength > 1)
+        //handle content, if any     
+        if (bufferLength > 1)
+        {
+            //do we have a mask
+            BOOL hasMask = buffer[index] & 0x80;
+            
+            //get payload length
+            long long dataLength = buffer[index++] & 0x7F;
+            if (dataLength == 126)
             {
-                //do we have a mask
-                BOOL hasMask = buffer[index] & 0x80;
-                
-                //get payload length
-                long long dataLength = buffer[index++] & 0x7F;
-                if (dataLength == 126)
+                if (bufferLength > 3)
                 {
-                    if (bufferLength > 3)
-                    {
-                        dataLength = buffer[index++] << 8 | buffer[index++];
-                    }
+                    dataLength = buffer[index++] << 8 | buffer[index++];
                 }
-                else if (dataLength == 127)
-                {
-                    if (bufferLength > 8)
-                    {
-                        dataLength = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
-                        dataLength = dataLength << 32 | buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
-                    }                    
-                }
-                
-                //if applicable, set mask value
-                if (hasMask)
-                {                    
-                    //grab mask
-                    if (bufferLength > index + 3)
-                    {
-                        self.mask = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
-                    }
-                }
-                
-                //we have our data, parse the contents
-                [self parseContentFrom:index length:dataLength];
             }
-        } 
+            else if (dataLength == 127)
+            {
+                if (bufferLength > 8)
+                {
+                    dataLength = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
+                    dataLength = dataLength << 32 | buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
+                }                    
+            }
+            
+            //if applicable, set mask value
+            if (hasMask)
+            {                    
+                //grab mask
+                if (bufferLength > index + 3)
+                {
+                    self.mask = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
+                }
+            }
+            
+            payloadStart = index;
+            payloadLength = dataLength;
+        }
     }
 }
 
@@ -183,25 +265,23 @@
     byte = 0x80;
     
     //payload length
-    long long payloadLength = [self.payloadData length];
-    if (payloadLength < 125)
+    long long fullPayloadLength = [self.payloadData length];
+    if (fullPayloadLength <= 125)
     {
-        byte |= (int) payloadLength;
+        byte |= (int) fullPayloadLength;
     }
-    else if (payloadLength <= INT16_MAX)
+    else if (fullPayloadLength <= INT16_MAX)
     {
         byte |= 126;
         [temp appendBytes:&byte length:1];
-        byte = payloadLength & 0xFF00;
-        [temp appendBytes:&byte length:1];
-        byte = payloadLength & 0xFF;
-        [temp appendBytes:&byte length:1];
+        short shortLength = fullPayloadLength & 0xFFFF;
+        [temp appendBytes:&shortLength length:2];
     }
-    else if (payloadLength <= INT64_MAX)
+    else if (fullPayloadLength <= INT64_MAX)
     {
         byte |= 127;
         [temp appendBytes:&byte length:1];
-        [temp appendBytes:&payloadLength length:8];
+        [temp appendBytes:&fullPayloadLength length:8];
     }
     
     //mask
@@ -209,6 +289,8 @@
     [temp appendBytes:&maskValue length:4];
     
     //payload data
+    payloadStart = [temp length];
+    payloadLength = fullPayloadLength;
     [temp appendData:self.payloadData];
     self.fragment = temp;
 }
@@ -260,7 +342,7 @@
 
 
 #pragma mark Lifecycle
-+ (id) fragmentWithOpCode:(PayloadOpCode) aOpCode payload:(NSData*) aPayload 
++ (id) fragmentWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload 
 {
     id result = [[[self class] alloc] initWithOpCode:aOpCode payload:aPayload];
     
@@ -274,7 +356,7 @@
     return [result autorelease];
 }
 
-- (id) initWithOpCode:(PayloadOpCode) aOpCode payload:(NSData*) aPayload
+- (id) initWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload
 {
     self = [super init];
     if (self)
@@ -292,9 +374,13 @@
     self = [super init];
     if (self)
     {
-        self.opCode = PayloadOpCodeIllegal;
+        self.opCode = MessageOpCodeIllegal;
         self.fragment = aData;
-        [self parseData];
+        [self parseHeader];
+        if (messageLength <= [aData length])
+        {
+            [self parseContent];
+        }
     }
     return self;
 }
@@ -304,7 +390,7 @@
     self = [super init];
     if (self)
     {
-        self.opCode = PayloadOpCodeIllegal;
+        self.opCode = MessageOpCodeIllegal;
     }
     return self;
 }

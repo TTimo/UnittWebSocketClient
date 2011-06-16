@@ -23,15 +23,15 @@
 
 enum 
 {
-    PayloadOpCodeIllegal = -1,
-    PayloadOpCodeContinuation = 0,
-    PayloadOpCodeText = 1,
-    PayloadOpCodeBinary = 2,
-    PayloadOpCodeClose = 8,
-    PayloadOpCodePing = 9,
-    PayloadOpCodePong = 10
+    MessageOpCodeIllegal = -1,
+    MessageOpCodeContinuation = 0,
+    MessageOpCodeText = 1,
+    MessageOpCodeBinary = 2,
+    MessageOpCodeClose = 8,
+    MessageOpCodePing = 9,
+    MessageOpCodePong = 10
 };
-typedef NSInteger PayloadOpCode;
+typedef NSInteger MessageOpCode;
 
 enum 
 {
@@ -41,15 +41,27 @@ enum
 };
 typedef NSInteger PayloadType;
 
+enum 
+{
+    PayloadLengthIllegal = -1,
+    PayloadLengthMinimum = 0,
+    PayloadLengthShort = 1,
+    PayloadLengthLong = 2
+};
+typedef NSInteger PayloadLength;
+
 
 @interface WebSocketFragment : NSObject 
 {
     BOOL finished;
     int mask;
+    int payloadStart;
+    int payloadLength;
     PayloadType payloadType;
     NSData* payloadData;
-    PayloadOpCode opCode;
+    MessageOpCode opCode;
     NSData* fragment;
+    NSUInteger messageLength;
 }
 
 @property (nonatomic,assign) BOOL finished;
@@ -58,14 +70,20 @@ typedef NSInteger PayloadType;
 @property (nonatomic,readonly) BOOL isDataFrame;
 @property (nonatomic,readonly) BOOL isValid;
 @property (nonatomic,assign) int mask;
-@property (nonatomic,assign) PayloadOpCode opCode;
+@property (nonatomic,assign) MessageOpCode opCode;
 @property (nonatomic,retain) NSData* payloadData;
 @property (nonatomic,assign) PayloadType payloadType;
 @property (nonatomic,retain) NSData* fragment;
+@property (nonatomic,readonly) NSUInteger messageLength;
 
-+ (id) fragmentWithOpCode:(PayloadOpCode) aOpCode payload:(NSData*) aPayload;
++ (PayloadLength) getPayloadLengthFromHeader:(NSData*) aHeader;
++ (BOOL) getIsMaskedFromHeader:(NSData*) aHeader;
++ (MessageOpCode) getOpCodeFromHeader:(NSData*) aHeader;
++ (int) getHeaderLengthFromHeader:(NSData*) aHeader;
+
++ (id) fragmentWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload;
 + (id) fragmentWithData:(NSData*) aData;
-- (id) initWithOpCode:(PayloadOpCode) aOpCode payload:(NSData*) aPayload;
+- (id) initWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload;
 - (id) initWithData:(NSData*) aData;
 
 @end
