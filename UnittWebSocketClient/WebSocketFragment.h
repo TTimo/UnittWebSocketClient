@@ -53,7 +53,7 @@ typedef NSInteger PayloadLength;
 
 @interface WebSocketFragment : NSObject 
 {
-    BOOL finished;
+    BOOL isFinal;
     int mask;
     int payloadStart;
     int payloadLength;
@@ -64,7 +64,7 @@ typedef NSInteger PayloadLength;
     NSUInteger messageLength;
 }
 
-@property (nonatomic,assign) BOOL finished;
+@property (nonatomic,assign) BOOL isFinal;
 @property (nonatomic,readonly) BOOL hasMask;
 @property (nonatomic,readonly) BOOL isControlFrame;
 @property (nonatomic,readonly) BOOL isDataFrame;
@@ -81,9 +81,13 @@ typedef NSInteger PayloadLength;
 + (MessageOpCode) getOpCodeFromHeader:(NSData*) aHeader;
 + (int) getHeaderLengthFromHeader:(NSData*) aHeader;
 
-+ (id) fragmentWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload;
+- (void) parseHeader;
+- (void) parseContent;
+- (void) buildFragment;
+
++ (id) fragmentWithOpCode:(MessageOpCode) aOpCode isFinal:(BOOL) aIsFinal payload:(NSData*) aPayload;
 + (id) fragmentWithData:(NSData*) aData;
-- (id) initWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload;
+- (id) initWithOpCode:(MessageOpCode) aOpCode isFinal:(BOOL) aIsFinal payload:(NSData*) aPayload;
 - (id) initWithData:(NSData*) aData;
 
 @end

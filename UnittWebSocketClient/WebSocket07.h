@@ -57,7 +57,12 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * Called when the web socket receives a message.
  **/
-- (void) didReceiveMessage: (NSString*) aMessage;
+- (void) didReceiveTextMessage: (NSString*) aMessage;
+
+/**
+ * Called when the web socket receives a message.
+ **/
+- (void) didReceiveBinaryMessage: (NSData*) aMessage;
 
 @end
 
@@ -79,6 +84,7 @@ typedef NSUInteger WebSocketReadyState;
     NSString* wsSecKey;
     NSString* wsSecKeyHandshake;
     BOOL verifyHandshake;
+    NSUInteger maxPayloadSize;
 }
 
 
@@ -86,6 +92,11 @@ typedef NSUInteger WebSocketReadyState;
  * Callback delegate for websocket events.
  **/
 @property(nonatomic,retain) id<WebSocketDelegate> delegate;
+
+/**
+ * Max size of the payload. Any messages larger will be sent as fragments.
+ **/
+@property(nonatomic,assign) NSUInteger maxPayloadSize;
 
 /**
  * Timeout used for sending messages, not establishing the socket connection. A
@@ -169,7 +180,12 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * Write a UTF-8 encoded NSString message to the websocket.
  **/
-- (void)send:(NSString*)message;
+- (void)sendText:(NSString*)message;
+
+/**
+ * Write a binary message to the websocket.
+ **/
+- (void)sendBinary:(NSData*)message;
 
 
 extern NSString *const WebSocketException;

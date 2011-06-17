@@ -30,16 +30,13 @@
 - (NSData*) mask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
 - (NSData*) unmask:(int) aMask data:(NSData*) aData;
 - (NSData*) unmask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
-- (void) parseHeader;
-- (void) parseContent;
-- (void) buildFragment;
 
 @end
 
 
 @implementation WebSocketFragment
 
-@synthesize finished;
+@synthesize isFinal;
 @synthesize mask;
 @synthesize opCode;
 @synthesize payloadData;
@@ -253,7 +250,7 @@
     NSMutableData* temp = [NSMutableData data];
     
     //build fin & reserved
-    char byte = self.finished ? 0x80 : 0x0;
+    char byte = self.isFinal ? 0x80 : 0x0;
     
     //build opmask
     byte |= self.opCode;
@@ -342,9 +339,9 @@
 
 
 #pragma mark Lifecycle
-+ (id) fragmentWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload 
++ (id) fragmentWithOpCode:(MessageOpCode) aOpCode isFinal:(BOOL) aIsFinal payload:(NSData*) aPayload 
 {
-    id result = [[[self class] alloc] initWithOpCode:aOpCode payload:aPayload];
+    id result = [[[self class] alloc] initWithOpCode:aOpCode isFinal:aIsFinal payload:aPayload];
     
     return [result autorelease];
 }
@@ -356,13 +353,21 @@
     return [result autorelease];
 }
 
-- (id) initWithOpCode:(MessageOpCode) aOpCode payload:(NSData*) aPayload
+- (id) initWithOpCode:(MessageOpCode) aOpCode isFinal:(BOOL) aIsFinal payload:(NSData*) aPayload
 {
     self = [super init];
     if (self)
     {
         self.mask = [self generateMask];
         self.opCode = aOpCode;
+        if (self.opCode == MessageOpCodeContinuation)
+        {
+            self.isFinal = NO;
+        }
+        else
+        {
+            self.isFinal = YES;
+        }
         self.payloadData = aPayload;
         [self buildFragment];
     }
