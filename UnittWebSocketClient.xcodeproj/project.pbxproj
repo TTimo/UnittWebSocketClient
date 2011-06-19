@@ -36,6 +36,8 @@
 		BDC83DF3137203CE00C46E3F /* NSData+Base64.h in Headers */ = {isa = PBXBuildFile; fileRef = BDC83DF1137203CE00C46E3F /* NSData+Base64.h */; };
 		BDC83DF4137203CE00C46E3F /* NSData+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC83DF2137203CE00C46E3F /* NSData+Base64.m */; };
 		BDC83DF513720DEE00C46E3F /* NSData+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC83DF2137203CE00C46E3F /* NSData+Base64.m */; };
+		BDD027B513AAF6A80012C2B9 /* MutableQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = BDD027B313AAF6A80012C2B9 /* MutableQueue.h */; };
+		BDD027B913AAF7FF0012C2B9 /* MutableQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +80,8 @@
 		BDC7F5CE13A9171400C1E994 /* WebSocket07.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocket07.m; sourceTree = "<group>"; };
 		BDC83DF1137203CE00C46E3F /* NSData+Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Base64.h"; sourceTree = "<group>"; };
 		BDC83DF2137203CE00C46E3F /* NSData+Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+Base64.m"; sourceTree = "<group>"; };
+		BDD027B313AAF6A80012C2B9 /* MutableQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MutableQueue.h; sourceTree = "<group>"; };
+		BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MutableQueue.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,6 +143,8 @@
 		BD0C324D136FA7CB008B53D7 /* UnittWebSocketClient */ = {
 			isa = PBXGroup;
 			children = (
+				BDD027B313AAF6A80012C2B9 /* MutableQueue.h */,
+				BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */,
 				BDC83DF1137203CE00C46E3F /* NSData+Base64.h */,
 				BDC83DF2137203CE00C46E3F /* NSData+Base64.m */,
 				BD0C3271136FA8C3008B53D7 /* AsyncSocket.h */,
@@ -201,6 +207,7 @@
 				BD27705413A594BC00E578FE /* WebSocketMessage.h in Headers */,
 				BDC7F5CF13A9171400C1E994 /* WebSocket07.h in Headers */,
 				BD52961313A96FDE00BCFE82 /* WebSocket00.h in Headers */,
+				BDD027B513AAF6A80012C2B9 /* MutableQueue.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -305,6 +312,7 @@
 				BD27704F13A57D6A00E578FE /* WebSocketFragment.m in Sources */,
 				BD27705513A594BC00E578FE /* WebSocketMessage.m in Sources */,
 				BDC7F5D013A9171400C1E994 /* WebSocket07.m in Sources */,
+				BDD027B913AAF7FF0012C2B9 /* MutableQueue.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

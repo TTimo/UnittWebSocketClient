@@ -66,9 +66,29 @@
     return self.opCode == MessageOpCodeContinuation || self.opCode == MessageOpCodeText || self.opCode == MessageOpCodeBinary;
 }
 
+- (BOOL) isFragmentEnough
+{
+    if (messageLength > 0)
+    {
+        return payloadStart + payloadLength == [fragment length];
+    }
+    
+    return NO;
+}
+
 - (BOOL) isValid
 {
-    return (self.isDataValid && self.isDataFrame) || self.isControlFrame;
+    if (messageLength)
+    {
+        return payloadStart + payloadLength == [fragment length];
+    }
+    
+    return messageLength;
+}
+
+- (BOOL) isHeaderValid
+{
+    return payloadStart;
 }
 
 - (BOOL) isDataValid
@@ -88,6 +108,7 @@
 
 
 #pragma mark Parsing
+/*
 + (PayloadLength) getPayloadLengthFromHeader:(NSData*) aHeader
 {    
     if ([aHeader length] > 1)
@@ -161,11 +182,13 @@
     
     return size;
 }
+*/
 
 - (void) parseContent
 {
     if ([self.fragment length] >= payloadStart + payloadLength)
     {
+        //set payload
         if (self.hasMask) 
         {
             self.payloadData = [self mask:self.mask data:self.fragment range:NSMakeRange(payloadStart, payloadLength)];
@@ -173,6 +196,12 @@
         else
         {
             self.payloadData = [self.fragment subdataWithRange:NSMakeRange(payloadStart, payloadLength)];
+        }
+        
+        //trim fragment, if necessary
+        if ([self.fragment length] > self.messageLength)
+        {
+            self.fragment = [self.fragment subdataWithRange:NSMakeRange(0, self.messageLength)];
         }
     }
 }
@@ -215,28 +244,37 @@
             long long dataLength = buffer[index++] & 0x7F;
             if (dataLength == 126)
             {
-                if (bufferLength > 3)
+                //exit if we are missing bytes
+                if (bufferLength < 4)
                 {
-                    dataLength = buffer[index++] << 8 | buffer[index++];
+                    return;
                 }
+                
+                dataLength = buffer[index++] << 8 | buffer[index++];
             }
             else if (dataLength == 127)
             {
-                if (bufferLength > 8)
+                //exit if we are missing bytes
+                if (bufferLength < 10)
                 {
-                    dataLength = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
-                    dataLength = dataLength << 32 | buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
-                }                    
+                    return;
+                }
+                
+                dataLength = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
+                dataLength = dataLength << 32 | buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];                    
             }
             
             //if applicable, set mask value
             if (hasMask)
-            {                    
-                //grab mask
-                if (bufferLength > index + 3)
+            {              
+                //exit if we are missing bytes
+                if (bufferLength < index + 4)
                 {
-                    self.mask = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
+                    return;
                 }
+                
+                //grab mask
+                self.mask = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
             }
             
             payloadStart = index;

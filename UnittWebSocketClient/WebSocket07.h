@@ -24,6 +24,7 @@
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonCryptor.h>
 #import "NSData+Base64.h"
+#import "MutableQueue.h"
 
 
 enum 
@@ -85,6 +86,7 @@ typedef NSUInteger WebSocketReadyState;
     NSString* wsSecKeyHandshake;
     BOOL verifyHandshake;
     NSUInteger maxPayloadSize;
+    MutableQueue* pendingFragments;
 }
 
 

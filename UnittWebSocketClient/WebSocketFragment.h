@@ -60,7 +60,7 @@ typedef NSInteger PayloadLength;
     PayloadType payloadType;
     NSData* payloadData;
     MessageOpCode opCode;
-    NSData* fragment;
+    NSMutableData* fragment;
     NSUInteger messageLength;
 }
 
@@ -69,17 +69,14 @@ typedef NSInteger PayloadLength;
 @property (nonatomic,readonly) BOOL isControlFrame;
 @property (nonatomic,readonly) BOOL isDataFrame;
 @property (nonatomic,readonly) BOOL isValid;
+@property (nonatomic,readonly) BOOL isFragmentEnough;
+@property (nonatomic,readonly) BOOL isHeaderValid;
 @property (nonatomic,assign) int mask;
 @property (nonatomic,assign) MessageOpCode opCode;
 @property (nonatomic,retain) NSData* payloadData;
 @property (nonatomic,assign) PayloadType payloadType;
-@property (nonatomic,retain) NSData* fragment;
+@property (nonatomic,retain) NSMutableData* fragment;
 @property (nonatomic,readonly) NSUInteger messageLength;
-
-+ (PayloadLength) getPayloadLengthFromHeader:(NSData*) aHeader;
-+ (BOOL) getIsMaskedFromHeader:(NSData*) aHeader;
-+ (MessageOpCode) getOpCodeFromHeader:(NSData*) aHeader;
-+ (int) getHeaderLengthFromHeader:(NSData*) aHeader;
 
 - (void) parseHeader;
 - (void) parseContent;

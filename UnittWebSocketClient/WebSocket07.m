@@ -22,11 +22,22 @@
 #import "WebSocketFragment.h"
 
 
+enum 
+{
+    WebSocketWaitingStateMessage = 0, //Starting on waiting for a new message
+    WebSocketWaitingStateHeader = 1, //Waiting for the remaining header bytes
+    WebSocketWaitingStatePayload = 2, //Waiting for the remaining payload bytes
+    WebSocketWaitingStateFragment = 3 //Waiting for the next fragment
+};
+typedef NSUInteger WebSocketWaitingState;
+
+
 @interface WebSocket(Private)
 - (void) dispatchFailure:(NSError*) aError;
 - (void) dispatchClosed:(NSError*) aWasClean;
 - (void) dispatchOpened ;
-- (void) dispatchMessageReceived:(NSString*) aMessage;
+- (void) dispatchTextMessageReceived:(NSString*) aMessage;
+- (void) dispatchBinaryMessageReceived:(NSData*) aMessage;
 - (void) continueReadingMessageStream;
 - (NSString*) buildOrigin;
 - (NSString*) getRequest: (NSString*) aRequestPath;
@@ -35,6 +46,11 @@
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
 - (NSString*) getServerProtocol:(NSString*) aResponse;
 - (void) sendMessage:(WebSocketFragment*) aFragment;
+- (void) handleMessageData:(NSData*) aData;
+- (void) handleCompleteFragment:(WebSocketFragment*) aFragment;
+- (void) handleCompleteFragments;
+- (void) handleClose:(WebSocketFragment*) aFragment;
+- (void) handlePing;
 @end
 
 
@@ -49,6 +65,7 @@ enum
     TagMessage = 1
 };
 
+WebSocketWaitingState waitingState;
 
 @synthesize maxPayloadSize;
 @synthesize delegate;
@@ -190,6 +207,106 @@ enum
 - (void) continueReadingMessageStream 
 {
     [socket readDataWithTimeout:self.timeout tag:TagMessage];
+}
+
+- (void) handleCompleteFragment:(WebSocketFragment*) aFragment
+{
+    switch (aFragment.opCode) 
+    {
+        case MessageOpCodeContinuation:
+            if (aFragment.isFinal)
+            {
+                [self handleCompleteFragments];
+            }
+            break;
+        case MessageOpCodeText:
+            [self dispatchTextMessageReceived:[[[NSString alloc] initWithData:aFragment.payloadData encoding:NSUTF8StringEncoding] autorelease]];
+            break;
+        case MessageOpCodeBinary:
+            [self dispatchBinaryMessageReceived:aFragment.payloadData];
+            break;
+        case MessageOpCodeClose:
+            [self handleClose:aFragment];
+            break;
+        case MessageOpCodePing:
+            [self handlePing];
+            break;
+    }
+}
+
+- (void) handleCompleteFragments
+{
+    WebSocketFragment* fragment = [pendingFragments dequeue];
+    if (fragment != nil)
+    {
+        //init
+        NSMutableData* messageData = [NSMutableData data];
+        MessageOpCode messageOpCode = fragment.opCode;
+    
+        //loop through, constructing single message
+        while (fragment != nil) 
+        {
+            [messageData appendData:fragment.payloadData];
+            fragment = [pendingFragments dequeue];
+        }
+        
+        //handle final message contents        
+        switch (messageOpCode) 
+        {            
+            case MessageOpCodeText:
+                [self dispatchTextMessageReceived:[[[NSString alloc] initWithData:messageData encoding:NSUTF8StringEncoding] autorelease]];
+                break;
+            case MessageOpCodeBinary:
+                [self dispatchBinaryMessageReceived:messageData];
+                break;
+        }
+    }
+}
+
+// TODO: handle a close op code
+- (void) handleClose:(WebSocketFragment*) aFragment
+{
+    
+}
+
+- (void) handlePing
+{
+    [self sendMessage:[WebSocketFragment fragmentWithOpCode:MessageOpCodePong isFinal:YES payload:nil]];
+}
+
+- (void) handleMessageData:(NSData*) aData
+{
+    //grab last fragment, use if not complete
+    WebSocketFragment* fragment = [pendingFragments lastObject];
+    BOOL isNewFragment = NO;
+    if (!fragment || fragment.isValid)
+    {
+        //assign web socket fragment since the last one was complete
+        fragment = [WebSocketFragment fragmentWithData:aData];
+        isNewFragment = YES;
+    }
+    else if (fragment)
+    {
+        [fragment.fragment appendData:aData];
+    }
+    
+    
+    //if we have a complete fragment, handle it
+    if (fragment.isFragmentEnough) 
+    {
+        //handle complete fragment
+        [self handleCompleteFragment:fragment];
+        
+        //if we have extra data, handle it
+        if ([aData length] > fragment.messageLength)
+        {
+            [self handleMessageData:[aData subdataWithRange:NSMakeRange(fragment.messageLength, [aData length] - fragment.messageLength)]];
+        }
+    }
+    else if (isNewFragment)
+    {
+        [pendingFragments enqueue:fragment];
+    }
 }
 
 - (NSData*) getSHA1:(NSData*) aPlainText 
@@ -440,7 +557,6 @@ enum
     }
 }
 
-// TODO: handle byte streaming & read web socket messages/fragments
 - (void) onSocket: (AsyncSocket*) aSocket didReadData:(NSData*) aData withTag:(long) aTag 
 {
     if (aTag == TagHandshake) 
@@ -467,11 +583,10 @@ enum
     } 
     else if (aTag == TagMessage) 
     {
-        char firstByte = 0xFF;
-        [aData getBytes:&firstByte length:1];
-        if (firstByte != 0x00) return; // Discard message
-        NSString* message = [[[NSString alloc] initWithData:[aData subdataWithRange:NSMakeRange(1, [aData length]-2)] encoding:NSUTF8StringEncoding] autorelease];
-        [self dispatchMessageReceived:message];
+        //handle data
+        [self handleMessageData:aData];
+        
+        //keep reading
         [self continueReadingMessageStream];
     }
 }
