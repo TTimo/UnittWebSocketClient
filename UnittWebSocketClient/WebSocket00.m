@@ -238,7 +238,7 @@ int randFromRange(int min, int max)
     
     key3 = [self createRandomBytes];
     
-    NSData* challenge = [NSData data];
+    NSMutableData* challenge = [NSMutableData data];
     int key1int = [key1 intValue];
     int key2int = [key2 intValue];
     [challenge appendBytes:(char*)&key1int length:4];
