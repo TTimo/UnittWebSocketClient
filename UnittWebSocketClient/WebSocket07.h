@@ -87,6 +87,7 @@ typedef NSUInteger WebSocketReadyState;
     BOOL verifyHandshake;
     NSUInteger maxPayloadSize;
     MutableQueue* pendingFragments;
+    BOOL isClosing;
 }
 
 

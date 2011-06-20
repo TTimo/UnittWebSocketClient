@@ -45,12 +45,14 @@ typedef NSUInteger WebSocketWaitingState;
 - (void) generateSecKeys;
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
 - (NSString*) getServerProtocol:(NSString*) aResponse;
+- (void) sendClose;
 - (void) sendMessage:(WebSocketFragment*) aFragment;
 - (void) handleMessageData:(NSData*) aData;
 - (void) handleCompleteFragment:(WebSocketFragment*) aFragment;
 - (void) handleCompleteFragments;
 - (void) handleClose:(WebSocketFragment*) aFragment;
 - (void) handlePing;
+- (void) closeSocket;
 @end
 
 
@@ -109,7 +111,14 @@ WebSocketWaitingState waitingState;
 - (void) close
 {
     readystate = WebSocketReadyStateClosing;
-    [socket disconnectAfterWriting];
+    [self sendClose];
+    isClosing = YES;
+}
+
+// TODO: put in timer to force close after message timeout
+- (void) sendClose
+{
+    [self sendMessage:[WebSocketFragment fragmentWithOpCode:MessageOpCodeClose isFinal:YES payload:nil]];
 }
 
 - (void) sendText:(NSString*) aMessage
@@ -209,6 +218,12 @@ WebSocketWaitingState waitingState;
     [socket readDataWithTimeout:self.timeout tag:TagMessage];
 }
 
+- (void) closeSocket
+{
+    readystate = WebSocketReadyStateClosing;
+    [socket disconnectAfterWriting];
+}
+
 - (void) handleCompleteFragment:(WebSocketFragment*) aFragment
 {
     switch (aFragment.opCode) 
@@ -266,7 +281,14 @@ WebSocketWaitingState waitingState;
 // TODO: handle a close op code
 - (void) handleClose:(WebSocketFragment*) aFragment
 {
-    
+    if (isClosing)
+    {
+        [self close];
+    }
+    else
+    {
+        isClosing = YES;
+    }
 }
 
 - (void) handlePing
@@ -437,8 +459,6 @@ WebSocketWaitingState waitingState;
     
     return false;
 }
-
-// TODO: handle close
 
 - (NSString*) getServerProtocol:(NSString*) aResponse
 {
