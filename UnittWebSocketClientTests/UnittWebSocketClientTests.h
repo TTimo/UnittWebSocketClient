@@ -19,16 +19,18 @@
 //
 
 #import <SenTestingKit/SenTestingKit.h>
-#import "WebSocket.h"
+#import "WebSocket00.h"
 
 
-@interface UnittWebSocketClientTests : SenTestCase 
+@interface UnittWebSocketClientTests : SenTestCase <WebSocketDelegate>
 {
 @private
     WebSocket* ws;
+    NSString* response;
 }
 
 @property (nonatomic, readonly) WebSocket* ws;
+@property (nonatomic, readonly) NSString* response;
 
 - (void) waitForSeconds: (NSTimeInterval) aSeconds;
 

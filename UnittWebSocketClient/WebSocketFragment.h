@@ -78,6 +78,14 @@ typedef NSInteger PayloadLength;
 @property (nonatomic,retain) NSMutableData* fragment;
 @property (nonatomic,readonly) NSUInteger messageLength;
 
+@property (nonatomic,readonly) BOOL isDataValid;
+
+- (int) generateMask;
+- (NSData*) mask:(int) aMask data:(NSData*) aData;
+- (NSData*) mask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
+- (NSData*) unmask:(int) aMask data:(NSData*) aData;
+- (NSData*) unmask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
+
 - (void) parseHeader;
 - (void) parseContent;
 - (void) buildFragment;

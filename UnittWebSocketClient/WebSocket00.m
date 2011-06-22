@@ -141,23 +141,37 @@ enum
                     "Host: %@\r\n"
                     "Origin: %@\r\n"
                     "Sec-WebSocket-Protocol: %@\r\n"
+                    "Sec-WebSocket-Version: 0\r\n"
                     "Sec-WebSocket-Key1: %@\r\n"
                     "Sec-WebSocket-Key2: %@\r\n"
-                    "\r\n",
-                    aRequestPath, self.url.host, self.origin, protocolFragment, key1, key2];
+                    "\r\n%@",
+                    aRequestPath, self.url.host, self.origin, protocolFragment, key1, key2, [NSData dataWithBytes:&key3 length:8]];
         }
     }
     
     //return request normally
+    
     return [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\n"
             "Upgrade: WebSocket\r\n"
             "Connection: Upgrade\r\n"
             "Host: %@\r\n"
             "Origin: %@\r\n"
+            "Sec-WebSocket-Version: 0\r\n"
             "Sec-WebSocket-Key1: %@\r\n"
             "Sec-WebSocket-Key2: %@\r\n"
+            "\r\n%@",
+            aRequestPath, self.url.host, self.origin, key1, key2, [[NSString alloc] initWithData:[NSData dataWithBytes:&key3 length:8] encoding:NSISOLatin1StringEncoding]];
+    
+    /*
+    return [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: Upgrade\r\n"
+            "Host: %@\r\n"
+            "Origin: %@\r\n"
+            "Sec-WebSocket-Version: 0\r\n"
             "\r\n",
-            aRequestPath, self.url.host, self.origin, key1, key2];
+            aRequestPath, self.url.host, self.origin];
+    */
 }
 
 int randFromRange(int min, int max)
@@ -184,16 +198,16 @@ int randFromRange(int min, int max)
         if (((0x21 < rand) && (rand < 0x2f)) || ((0x3a < rand) && (rand < 0x7e))) 
         {
             randomChars[randCount] = (char) rand;
-            randCount += 1;
         }
+        randCount += 1;
     }
     
     for (int i = 0; i < count; i++) 
     {
         int split = randFromRange(1, [aString length] - 1);
         NSString* part1 = [aString substringWithRange:NSMakeRange(0, split)];
-        NSString* part2 = [aString substringWithRange:NSMakeRange(split, [aString length])];
-        result = [NSString stringWithFormat:@"%@%@%@", part1, randomChars[i], part2];
+        NSString* part2 = [aString substringWithRange:NSMakeRange(split, [aString length] - split)];
+        result = [NSString stringWithFormat:@"%@%c%@", part1, randomChars[i], part2];
     }
     
     return result;
@@ -206,7 +220,7 @@ int randFromRange(int min, int max)
     {
         int split = randFromRange(1, [aString length] - 1);
         NSString* part1 = [aString substringWithRange:NSMakeRange(0, split)];
-        NSString* part2 = [aString substringWithRange:NSMakeRange(split, [aString length])];
+        NSString* part2 = [aString substringWithRange:NSMakeRange(split, [aString length] - split)];
         result = [NSString stringWithFormat:@"%@ %@", part1, part2];
     }
     
@@ -250,6 +264,7 @@ int randFromRange(int min, int max)
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
 {
+    NSLog(@"Handshake Response:\n%@", aResponse);
     //a HTTP 101 response is the only valid one
     if ([aResponse hasPrefix:@"HTTP/1.1 101"])
     {        
@@ -391,6 +406,7 @@ int randFromRange(int min, int max)
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }
     NSString* getRequest = [self getRequest: requestPath];
+    NSLog(@"Handshake Request: %@", getRequest);
     [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
 }
 
@@ -485,6 +501,11 @@ int randFromRange(int min, int max)
 
 - (NSString*) buildOrigin
 {
+    if (self.url.port && [self.url.port intValue] != 80 && [self.url.port intValue] != 443)
+    {
+        return [NSString stringWithFormat:@"%@://%@:%i%@", isSecure ? @"https" : @"http", self.url.host, [self.url.port intValue], self.url.path ? self.url.path : @""];
+    }
+    
     return [NSString stringWithFormat:@"%@://%@%@", isSecure ? @"https" : @"http", self.url.host, self.url.path ? self.url.path : @""];
 }
 

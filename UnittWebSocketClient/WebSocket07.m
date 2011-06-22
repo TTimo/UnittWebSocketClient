@@ -208,6 +208,7 @@ WebSocketWaitingState waitingState;
 
 - (void) sendMessage:(WebSocketFragment*) aFragment
 {
+    NSLog(@"Writing fragment: %@", aFragment);
     [socket writeData:aFragment.fragment withTimeout:self.timeout tag:TagMessage];
 }
 
@@ -414,6 +415,7 @@ WebSocketWaitingState waitingState;
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
 {
+    NSLog(@"Handshake Response: %@", aResponse);
     //a HTTP 101 response is the only valid one
     if ([aResponse hasPrefix:@"HTTP/1.1 101"])
     {        
@@ -566,6 +568,7 @@ WebSocketWaitingState waitingState;
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }
     NSString* getRequest = [self getRequest: requestPath];
+    NSLog(@"Handshake Request: %@", getRequest);
     [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
 }
 
@@ -574,6 +577,10 @@ WebSocketWaitingState waitingState;
     if (aTag == TagHandshake) 
     {
         [aSocket readDataToData:[@"\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
+    }
+    else if (aTag == TagMessage)
+    {
+        NSLog(@"Wrote message data");
     }
 }
 
@@ -653,12 +660,20 @@ WebSocketWaitingState waitingState;
         verifyHandshake = aVerifyHandshake;
         socket = [[AsyncSocket alloc] initWithDelegate:self];
         self.timeout = 30.0;
+        maxPayloadSize = 4096;
+        pendingFragments = [[MutableQueue alloc] init];
+        isClosing = NO;
     }
     return self;
 }
 
 - (NSString*) buildOrigin
 {
+    if (self.url.port && [self.url.port intValue] != 80 && [self.url.port intValue] != 443)
+    {
+        return [NSString stringWithFormat:@"%@://%@:%i%@", isSecure ? @"https" : @"http", self.url.host, [self.url.port intValue], self.url.path ? self.url.path : @""];
+    }
+    
     return [NSString stringWithFormat:@"%@://%@%@", isSecure ? @"https" : @"http", self.url.host, self.url.path ? self.url.path : @""];
 }
 
@@ -673,6 +688,7 @@ WebSocketWaitingState waitingState;
     [closingError release];
     [protocols release];
     [tlsSettings release];
+    [pendingFragments release];
     [super dealloc];
 }
 

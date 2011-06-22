@@ -1,8 +1,8 @@
 //
-//  NSMutableArray+QueueAddition.h
+//  UnittWebSocketClient07Tests.h
 //  UnittWebSocketClient
 //
-//  Created by Josh Morris on 6/16/11.
+//  Created by Josh Morris on 6/19/11.
 //  Copyright 2011 UnitT Software. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -18,16 +18,20 @@
 //  the License.
 //
 
-#import <Foundation/Foundation.h>
+#import <SenTestingKit/SenTestingKit.h>
+#import "WebSocket07.h"
 
 
-@interface MutableQueue : NSObject
+@interface UnittWebSocketClient07Tests : SenTestCase  <WebSocketDelegate>
 {
-    NSMutableArray* items;
+@private
+    WebSocket* ws;
+    NSString* response;
 }
 
-- (id) dequeue;
-- (void) enqueue:(id) aObject;
-- (id) lastObject;
+@property (nonatomic, readonly) WebSocket* ws;
+@property (nonatomic, readonly) NSString* response;
+
+- (void) waitForSeconds: (NSTimeInterval) aSeconds;
 
 @end

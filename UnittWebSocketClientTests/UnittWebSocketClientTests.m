@@ -19,26 +19,50 @@
 //
 
 #import "UnittWebSocketClientTests.h"
-#import "WebSocket.h"
-#import "MyWebSocketDelegate.h"
-
 
 @implementation UnittWebSocketClientTests
 
 @synthesize ws;
+@synthesize response;
 
+#pragma mark WebSocketDelegate
+- (void) didOpen
+{
+    NSLog(@"Did open");
+    [self.ws send:@"Blue"];
+}
+
+- (void) didClose: (NSError*) aError
+{
+    NSLog(@"Error: %@", [aError localizedDescription]);
+}
+
+- (void) didReceiveError: (NSError*) aError
+{
+    NSLog(@"Error: %@", [aError localizedDescription]);
+}
+
+- (void) didReceiveMessage: (NSString*) aMessage
+{
+    NSLog(@"Did receive message:%@", aMessage);
+    if (aMessage)
+    {
+        response = [aMessage copy];
+    }
+}
+
+#pragma mark Test
 - (void)setUp
 {
     [super setUp];
     
-    MyWebSocketDelegate* delegate = [[[MyWebSocketDelegate alloc] initWithTest:self] autorelease];
-    //we are not going to verifyAccept since Jetty is using prior web socket implementation
-    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:delegate origin:nil protocols:nil tlsSettings:nil verifyAccept:false] retain];
+    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:nil tlsSettings:nil verifyHandshake:false] retain];
 }
 
 - (void)tearDown
 {    
     [ws release];
+    [response release];
     [super tearDown];
 }
 
@@ -51,8 +75,8 @@
 - (void) testExample
 {
     [self.ws open];
-    [self waitForSeconds:10.0];
-    STAssertEqualObjects(((MyWebSocketDelegate*) ws.delegate).response, @"Message: Blue", @"Did not find the correct phone.");
+    [self waitForSeconds:120.0];
+    STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct phone.");
 }
 
 @end

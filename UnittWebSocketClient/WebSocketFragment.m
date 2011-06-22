@@ -21,19 +21,6 @@
 #import "WebSocketFragment.h"
 
 
-@interface WebSocketFragment()
-
-@property (nonatomic,readonly) BOOL isDataValid;
-
-- (int) generateMask;
-- (NSData*) mask:(int) aMask data:(NSData*) aData;
-- (NSData*) mask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
-- (NSData*) unmask:(int) aMask data:(NSData*) aData;
-- (NSData*) unmask:(int) aMask data:(NSData*) aData range:(NSRange) aRange;
-
-@end
-
-
 @implementation WebSocketFragment
 
 @synthesize isFinal;
@@ -201,7 +188,7 @@
         //trim fragment, if necessary
         if ([self.fragment length] > self.messageLength)
         {
-            self.fragment = [self.fragment subdataWithRange:NSMakeRange(0, self.messageLength)];
+            self.fragment = [NSMutableData dataWithData:[self.fragment subdataWithRange:NSMakeRange(0, self.messageLength)]];
         }
     }
 }
@@ -320,7 +307,7 @@
     }
     
     //mask
-    int32_t maskValue = self.mask;
+    int maskValue = self.mask;
     [temp appendBytes:&maskValue length:4];
     
     //payload data
@@ -350,17 +337,20 @@
     {
         end = [aData length];
     }
+    int m = 0;
+    NSRange range = NSMakeRange(index, 1);
     while (index < end) 
     {
         //set current byte
-        [aData getBytes:&current range:NSMakeRange(index, 1)];
+        range.location = index;
+        [aData getBytes:&current range:range];
         
         //mask
-        current = current ^ maskBytes[index % 4];
+        current ^= maskBytes[m++ % 4];
         
         //append result & continue
-        index++;
         [result appendBytes:&current length:1];
+        index++;
     }
     return result;
 }
@@ -418,7 +408,7 @@
     if (self)
     {
         self.opCode = MessageOpCodeIllegal;
-        self.fragment = aData;
+        self.fragment = [NSMutableData dataWithData:aData];
         [self parseHeader];
         if (messageLength <= [aData length])
         {
