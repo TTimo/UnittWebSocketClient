@@ -24,12 +24,12 @@
 enum 
 {
     MessageOpCodeIllegal = -1,
-    MessageOpCodeContinuation = 0,
-    MessageOpCodeText = 1,
-    MessageOpCodeBinary = 2,
-    MessageOpCodeClose = 8,
-    MessageOpCodePing = 9,
-    MessageOpCodePong = 10
+    MessageOpCodeContinuation = 0x0,
+    MessageOpCodeText = 0x1,
+    MessageOpCodeBinary = 0x2,
+    MessageOpCodeClose = 0x8,
+    MessageOpCodePing = 0x9,
+    MessageOpCodePong = 0xA
 };
 typedef NSInteger MessageOpCode;
 
@@ -61,7 +61,6 @@ typedef NSInteger PayloadLength;
     NSData* payloadData;
     MessageOpCode opCode;
     NSMutableData* fragment;
-    NSUInteger messageLength;
 }
 
 @property (nonatomic,assign) BOOL isFinal;

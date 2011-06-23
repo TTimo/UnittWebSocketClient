@@ -208,7 +208,10 @@ WebSocketWaitingState waitingState;
 
 - (void) sendMessage:(WebSocketFragment*) aFragment
 {
-    NSLog(@"Writing fragment: %@", aFragment);
+    /*
+    NSLog(@"Writing fragment with payload: %@", [[[NSString alloc] initWithData:aFragment.payloadData encoding:NSUTF8StringEncoding] autorelease]);
+    NSLog(@"Writing fragment: %@", aFragment.fragment);
+    */
     [socket writeData:aFragment.fragment withTimeout:self.timeout tag:TagMessage];
 }
 
@@ -660,7 +663,7 @@ WebSocketWaitingState waitingState;
         verifyHandshake = aVerifyHandshake;
         socket = [[AsyncSocket alloc] initWithDelegate:self];
         self.timeout = 30.0;
-        maxPayloadSize = 4096;
+        maxPayloadSize = 32*1024;
         pendingFragments = [[MutableQueue alloc] init];
         isClosing = NO;
     }

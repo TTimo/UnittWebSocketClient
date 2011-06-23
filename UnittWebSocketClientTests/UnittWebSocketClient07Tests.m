@@ -62,7 +62,7 @@
 - (void)setUp
 {
     [super setUp];
-    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"chat"] tlsSettings:nil verifyHandshake:YES] retain];
+    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
 }
 
 - (void)tearDown
@@ -91,7 +91,7 @@
     
     //test spec
     fragment.mask = 0x37 << 24 | 0xfa << 16 | 0x21 << 8 | 0x3d;
-    const char bytes[5] = {0x7f, 0x9f, 0x4d, 0x51, 0x58};
+    const unsigned char bytes[5] = {0x7f, 0x9f, 0x4d, 0x51, 0x58};
     NSData* sample = [NSData dataWithBytes:bytes length:5];
     NSData* unmaskedSample = [fragment unmask:fragment.mask data:sample];
     NSString* testText = [[[NSString alloc] initWithData:unmaskedSample encoding:NSUTF8StringEncoding] autorelease];
@@ -101,15 +101,16 @@
 - (void) notestRoundTrip
 {
     [self.ws open];
-    [self waitForSeconds:120.0];
+    [self waitForSeconds:10.0];
     STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct phone.");
 }
 
-- (void) notestUnmaskedText
+- (void) testUnmaskedText
 {
-    const char bytes[7] = {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f};
+    const unsigned char bytes[7] = {0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f};
     NSData* sample = [NSData dataWithBytes:bytes length:7];
     WebSocketFragment* fragment = [WebSocketFragment fragmentWithData:sample];
+    STAssertTrue(fragment.isFinal, @"Did not set final bit.");
     STAssertEquals(fragment.payloadType, PayloadTypeText, @"Did not find the correct payloadtype.");
     STAssertFalse(fragment.hasMask, @"Did not find the correct has mask value.");
     STAssertNotNil(fragment.payloadData, @"Did not build any payload data");
@@ -117,22 +118,35 @@
     STAssertEqualObjects(message, @"Hello", @"Did not find the correct message.");
 }
 
-- (void) notestMaskedText
+- (void) testMaskedText
 {
-    const char bytes[11] = {0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58};
+    const unsigned char bytes[11] = {0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58};
     NSData* sample = [NSData dataWithBytes:bytes length:11];
     WebSocketFragment* fragment = [WebSocketFragment fragmentWithData:sample];
+    STAssertTrue(fragment.isFinal, @"Did not set final bit.");
     STAssertEquals(fragment.payloadType, PayloadTypeText, @"Did not find the correct payloadtype.");
     STAssertTrue(fragment.hasMask, @"Did not find the correct has mask value.");
     STAssertNotNil(fragment.payloadData, @"Did not build any payload data");
-    
-    WebSocketFragment* fragment2 = [WebSocketFragment fragmentWithOpCode:MessageOpCodeText isFinal:YES payload:[[NSString stringWithString:@"Hello"] dataUsingEncoding:NSUTF8StringEncoding]];
-    NSData* sample2 = [NSData dataWithData:fragment2.fragment];
-    WebSocketFragment* fragment3 = [WebSocketFragment fragmentWithData:fragment2.fragment];
-    NSString* test = [[[NSString alloc] initWithData:fragment3.payloadData encoding:NSUTF8StringEncoding] autorelease];
-    STAssertEqualObjects(sample, sample2, "@Did not build the correct fragment");
+    int correctMask = 0x37 << 24 | 0xfa << 16 | 0x21 << 8 | 0x3d;
+    STAssertEquals(fragment.mask, correctMask, @"Did not find correct mask");
     NSString* message = [[[NSString alloc] initWithData:fragment.payloadData encoding:NSUTF8StringEncoding] autorelease];
     STAssertEqualObjects(message, @"Hello", @"Did not find the correct message.");
+    fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeText isFinal:YES payload:[@"Hello" dataUsingEncoding:NSUTF8StringEncoding]];
+    const unsigned char buffer[2];
+    [fragment.fragment getBytes:&buffer length:2];
+    for (int i = 0; i < 2; i++) 
+    {
+        STAssertEquals(bytes[i], buffer[i], @"Byte #%i is different. Should be '%x'. It was '%x'", i, bytes[i], buffer[i]);
+    }
+    [fragment parseHeader];
+    fragment.mask = correctMask;
+    [fragment parseContent];
+    STAssertEquals(correctMask, fragment.mask, @"Did not apply correct mask");
+    STAssertTrue(fragment.isValid, @"Did not parse correctly.");
+    NSData* messageData = [sample subdataWithRange:NSMakeRange(6, 5)];
+    STAssertEqualObjects(messageData, fragment.payloadData, @"Did not generate correct payload with mask.");
+    //message = [[[NSString alloc] initWithData:fragment.payloadData encoding:NSUTF8StringEncoding] autorelease];
+    //STAssertEqualObjects(message, @"Hello", @"Did not find the correct message.");
 }
 
 - (void) testFragmentedText

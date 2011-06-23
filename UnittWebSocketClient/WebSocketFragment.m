@@ -55,7 +55,7 @@
 
 - (BOOL) isFragmentEnough
 {
-    if (messageLength > 0)
+    if (self.messageLength > 0)
     {
         return payloadStart + payloadLength == [fragment length];
     }
@@ -65,12 +65,12 @@
 
 - (BOOL) isValid
 {
-    if (messageLength)
+    if (self.messageLength)
     {
         return payloadStart + payloadLength == [fragment length];
     }
     
-    return messageLength;
+    return self.messageLength;
 }
 
 - (BOOL) isHeaderValid
@@ -95,82 +95,6 @@
 
 
 #pragma mark Parsing
-/*
-+ (PayloadLength) getPayloadLengthFromHeader:(NSData*) aHeader
-{    
-    if ([aHeader length] > 1)
-    {
-        char byte;
-        [aHeader getBytes:&byte range:NSMakeRange(1, 1)];
-        if (byte <= 125)
-        {   
-            return PayloadLengthMinimum;
-        }
-        if (byte == 126)
-        {
-            return PayloadLengthShort;
-        }
-        else if (byte == 127)
-        {
-            return PayloadLengthLong;                  
-        }
-    }
-    
-    return PayloadLengthIllegal;
-}
-
-+ (BOOL) getIsMaskedFromHeader:(NSData*) aHeader
-{
-    if ([aHeader length] > 1)
-    {
-        char byte;
-        [aHeader getBytes:&byte range:NSMakeRange(1, 1)];
-        return byte & 0x80;
-    }
-    
-    return NO;
-}
-
-+ (MessageOpCode) getOpCodeFromHeader:(NSData*) aHeader
-{
-    if ([aHeader length] > 0)
-    {
-        char byte;
-        [aHeader getBytes:&byte length:1];
-        return byte & 0x0F;
-    }
-    
-    return MessageOpCodeIllegal;
-}
-
-+ (int) getHeaderLengthFromHeader:(NSData*) aHeader
-{
-    BOOL hdrIsMasked = [self getIsMaskedFromHeader:aHeader];
-    PayloadLength hdrPayloadLength = [self getPayloadLengthFromHeader:aHeader];
-    
-    int size = 2;
-    
-    //get payload length options
-    switch (hdrPayloadLength) 
-    {
-        case PayloadLengthShort:
-            size += 2;
-            break;
-        case PayloadLengthLong:
-            size += 6;
-            break;
-    }
-    
-    //get mask option
-    if (hdrIsMasked)
-    {
-        size += 4;
-    }
-    
-    return size;
-}
-*/
-
 - (void) parseContent
 {
     if ([self.fragment length] >= payloadStart + payloadLength)
@@ -201,13 +125,14 @@
     {
         bufferLength = [self.fragment length];
     }
-    char buffer[bufferLength];
+    const unsigned char buffer[bufferLength];
     [self.fragment getBytes:&buffer length:bufferLength];
     
     //determine opcode
     if (bufferLength > 0) 
     {
         int index = 0;
+        self.isFinal = buffer[index] & 0x80;
         self.opCode = buffer[index++] & 0x0F;
         
         //handle data depending on opcode
@@ -261,7 +186,8 @@
                 }
                 
                 //grab mask
-                self.mask = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
+                self.mask = buffer[index] << 24 | buffer[index+1] << 16 | buffer[index+2] << 8 | buffer[index+3];
+                index += 4;
             }
             
             payloadStart = index;
@@ -275,10 +201,14 @@
     NSMutableData* temp = [NSMutableData data];
     
     //build fin & reserved
-    char byte = self.isFinal ? 0x80 : 0x0;
+    unsigned char byte = 0x0;
+    if (self.isFinal)
+    {
+        byte = 0x80;
+    }
     
     //build opmask
-    byte |= self.opCode;
+    byte = byte | (self.opCode & 0xF);
     
     //push first byte
     [temp appendBytes:&byte length:1];
@@ -290,7 +220,8 @@
     long long fullPayloadLength = [self.payloadData length];
     if (fullPayloadLength <= 125)
     {
-        byte |= (int) fullPayloadLength;
+        byte |= (fullPayloadLength & 0xFF);
+        [temp appendBytes:&byte length:1];
     }
     else if (fullPayloadLength <= INT16_MAX)
     {
@@ -325,12 +256,12 @@
 - (NSData*) mask:(int) aMask data:(NSData*) aData range:(NSRange) aRange
 {
     NSMutableData* result = [NSMutableData data];
-    char maskBytes[4];
+    unsigned char maskBytes[4];
     maskBytes[0] = (int)((aMask >> 24) & 0xFF) ;
     maskBytes[1] = (int)((aMask >> 16) & 0xFF) ;
     maskBytes[2] = (int)((aMask >> 8) & 0XFF);
     maskBytes[3] = (int)((aMask & 0XFF));
-    char current;
+    unsigned char current;
     int index = aRange.location;
     int end = aRange.location + aRange.length;
     if (end > [aData length])
@@ -410,7 +341,7 @@
         self.opCode = MessageOpCodeIllegal;
         self.fragment = [NSMutableData dataWithData:aData];
         [self parseHeader];
-        if (messageLength <= [aData length])
+        if (self.messageLength <= [aData length])
         {
             [self parseContent];
         }

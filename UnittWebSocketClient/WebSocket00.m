@@ -110,8 +110,8 @@ enum
 
 - (NSData*) getMD5:(NSData*) aPlainText 
 {
-    const char *cStr = [aPlainText bytes];
-    unsigned char result[16];
+    const unsigned char *cStr = [aPlainText bytes];
+    const unsigned char result[16];
     CC_MD5( cStr, strlen(cStr), result );
     return [NSData dataWithBytes:result length:16];
 }
@@ -182,7 +182,7 @@ int randFromRange(int min, int max)
 - (NSData*) createRandomBytes
 {
     long long bytes = arc4random();
-    return [NSData dataWithBytes:(char*)&bytes length:sizeof(bytes)]; 
+    return [NSData dataWithBytes:(unsigned char*)&bytes length:sizeof(bytes)]; 
 }
 
 - (NSString*) insertRandomCharacters: (NSString*) aString
@@ -190,14 +190,14 @@ int randFromRange(int min, int max)
     NSString* result = nil;
     int count = randFromRange(1, 12);
     
-    char randomChars[count];
+    unsigned char randomChars[count];
     int randCount = 0;
     while (randCount < count) 
     {
         int rand = (int) (arc4random() * 0x7e + 0x21);
         if (((0x21 < rand) && (rand < 0x2f)) || ((0x3a < rand) && (rand < 0x7e))) 
         {
-            randomChars[randCount] = (char) rand;
+            randomChars[randCount] = (unsigned char) rand;
         }
         randCount += 1;
     }
@@ -444,7 +444,7 @@ int randFromRange(int min, int max)
     } 
     else if (aTag == TagMessage) 
     {
-        char firstByte = 0xFF;
+        unsigned char firstByte = 0xFF;
         [aData getBytes:&firstByte length:1];
         if (firstByte != 0x00) return; // Discard message
         NSString* message = [[[NSString alloc] initWithData:[aData subdataWithRange:NSMakeRange(1, [aData length]-2)] encoding:NSUTF8StringEncoding] autorelease];

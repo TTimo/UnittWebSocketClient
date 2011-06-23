@@ -35,8 +35,8 @@
 		BDD027B513AAF6A80012C2B9 /* MutableQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = BDD027B313AAF6A80012C2B9 /* MutableQueue.h */; };
 		BDD027B913AAF7FF0012C2B9 /* MutableQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */; };
 		BDD61A8513B1A71600FF3358 /* MutableQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */; };
-		BDD61A8613B1A71600FF3358 /* WebSocket07.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC7F5CE13A9171400C1E994 /* WebSocket07.m */; };
-		BDD61A8713B1A71600FF3358 /* UnittWebSocketClient07Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDF1209113AEEFE600AD997A /* UnittWebSocketClient07Tests.m */; };
+		BDE04FA913B3079F0070DEF4 /* WebSocket07.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC7F5CE13A9171400C1E994 /* WebSocket07.m */; };
+		BDE04FAA13B3079F0070DEF4 /* UnittWebSocketClient07Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDF1209113AEEFE600AD997A /* UnittWebSocketClient07Tests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -319,9 +319,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BDE04FA913B3079F0070DEF4 /* WebSocket07.m in Sources */,
+				BDE04FAA13B3079F0070DEF4 /* UnittWebSocketClient07Tests.m in Sources */,
 				BDD61A8513B1A71600FF3358 /* MutableQueue.m in Sources */,
-				BDD61A8613B1A71600FF3358 /* WebSocket07.m in Sources */,
-				BDD61A8713B1A71600FF3358 /* UnittWebSocketClient07Tests.m in Sources */,
 				BDC83DF513720DEE00C46E3F /* NSData+Base64.m in Sources */,
 				BD8D92891370EFBD0018753B /* AsyncSocket.m in Sources */,
 				BD27705013A57D6A00E578FE /* WebSocketFragment.m in Sources */,
