@@ -98,7 +98,7 @@
     STAssertEqualObjects(testText, @"Hello", @"Did not find the correct message.");
 }
 
-- (void) notestRoundTrip
+- (void) testRoundTrip
 {
     [self.ws open];
     [self waitForSeconds:10.0];
@@ -132,21 +132,19 @@
     NSString* message = [[[NSString alloc] initWithData:fragment.payloadData encoding:NSUTF8StringEncoding] autorelease];
     STAssertEqualObjects(message, @"Hello", @"Did not find the correct message.");
     fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeText isFinal:YES payload:[@"Hello" dataUsingEncoding:NSUTF8StringEncoding]];
-    const unsigned char buffer[2];
-    [fragment.fragment getBytes:&buffer length:2];
-    for (int i = 0; i < 2; i++) 
+    fragment.mask = correctMask;
+    STAssertEquals(correctMask, fragment.mask, @"Did not apply correct mask");
+    [fragment buildFragment];
+    const unsigned char buffer[6];
+    [fragment.fragment getBytes:&buffer length:6];
+    for (int i = 0; i < 6; i++) 
     {
         STAssertEquals(bytes[i], buffer[i], @"Byte #%i is different. Should be '%x'. It was '%x'", i, bytes[i], buffer[i]);
     }
-    [fragment parseHeader];
-    fragment.mask = correctMask;
-    [fragment parseContent];
-    STAssertEquals(correctMask, fragment.mask, @"Did not apply correct mask");
-    STAssertTrue(fragment.isValid, @"Did not parse correctly.");
     NSData* messageData = [sample subdataWithRange:NSMakeRange(6, 5)];
-    STAssertEqualObjects(messageData, fragment.payloadData, @"Did not generate correct payload with mask.");
-    //message = [[[NSString alloc] initWithData:fragment.payloadData encoding:NSUTF8StringEncoding] autorelease];
-    //STAssertEqualObjects(message, @"Hello", @"Did not find the correct message.");
+    NSData* fragmentMessageData = [fragment.fragment subdataWithRange:NSMakeRange(6, 5)];
+    STAssertEqualObjects(fragmentMessageData, messageData, @"Did not generate correct payload with mask.");
+    STAssertEqualObjects(fragment.fragment, sample, @"Did not generate correct data.");
 }
 
 - (void) testFragmentedText

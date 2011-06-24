@@ -102,7 +102,7 @@
         //set payload
         if (self.hasMask) 
         {
-            self.payloadData = [self mask:self.mask data:self.fragment range:NSMakeRange(payloadStart, payloadLength)];
+            self.payloadData = [self unmask:self.mask data:self.fragment range:NSMakeRange(payloadStart, payloadLength)];
         }
         else
         {
@@ -238,13 +238,17 @@
     }
     
     //mask
-    int maskValue = self.mask;
-    [temp appendBytes:&maskValue length:4];
+    unsigned char maskBytes[4];
+    maskBytes[0] = (int)((self.mask >> 24) & 0xFF) ;
+    maskBytes[1] = (int)((self.mask >> 16) & 0xFF) ;
+    maskBytes[2] = (int)((self.mask >> 8) & 0XFF);
+    maskBytes[3] = (int)((self.mask & 0XFF));
+    [temp appendBytes:maskBytes length:4];
     
     //payload data
     payloadStart = [temp length];
     payloadLength = fullPayloadLength;
-    [temp appendData:self.payloadData];
+    [temp appendData:[self mask:self.mask data:self.payloadData]];
     self.fragment = temp;
 }
 
