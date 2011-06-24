@@ -134,24 +134,26 @@ WebSocketWaitingState waitingState;
     else
     {
         NSMutableArray* fragments = [NSMutableArray array];
-        int fragmentCount = messageLength / self.maxPayloadSize;
+        unsigned int fragmentCount = messageLength / self.maxPayloadSize;
         fragmentCount += messageLength % self.maxPayloadSize;
         
         //build fragments
         for (int i = 0; i < fragmentCount; i++)
         {
             WebSocketFragment* fragment = nil;
+            unsigned int fragmentLength = self.maxPayloadSize;
             if (i == 0)
             {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeText isFinal:NO payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, self.maxPayloadSize)]];
+                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeText isFinal:NO payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
             }
             else if (i == fragmentCount - 1)
             {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, self.maxPayloadSize)]];
+                fragmentLength = messageLength % self.maxPayloadSize;
+                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
             }
             else
             {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:NO payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, self.maxPayloadSize)]];
+                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:NO payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
             }
             [fragments addObject:fragment];
         }
@@ -176,24 +178,26 @@ WebSocketWaitingState waitingState;
     else
     {
         NSMutableArray* fragments = [NSMutableArray array];
-        int fragmentCount = messageLength / self.maxPayloadSize;
+        unsigned int fragmentCount = messageLength / self.maxPayloadSize;
         fragmentCount += messageLength % self.maxPayloadSize;
         
         //build fragments
         for (int i = 0; i < fragmentCount; i++)
         {
             WebSocketFragment* fragment = nil;
+            unsigned int fragmentLength = self.maxPayloadSize;
             if (i == 0)
             {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeBinary isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, self.maxPayloadSize)]];
+                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeBinary isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
             }
             else if (i == fragmentCount - 1)
             {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, self.maxPayloadSize)]];
+                fragmentLength = messageLength % self.maxPayloadSize;
+                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
             }
             else
             {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, self.maxPayloadSize)]];
+                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
             }
             [fragments addObject:fragment];
         }
@@ -208,10 +212,6 @@ WebSocketWaitingState waitingState;
 
 - (void) sendMessage:(WebSocketFragment*) aFragment
 {
-    /*
-    NSLog(@"Writing fragment with payload: %@", [[[NSString alloc] initWithData:aFragment.payloadData encoding:NSUTF8StringEncoding] autorelease]);
-    NSLog(@"Writing fragment: %@", aFragment.fragment);
-    */
     [socket writeData:aFragment.fragment withTimeout:self.timeout tag:TagMessage];
 }
 
@@ -418,7 +418,6 @@ WebSocketWaitingState waitingState;
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
 {
-    NSLog(@"Handshake Response: %@", aResponse);
     //a HTTP 101 response is the only valid one
     if ([aResponse hasPrefix:@"HTTP/1.1 101"])
     {        
@@ -571,7 +570,6 @@ WebSocketWaitingState waitingState;
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }
     NSString* getRequest = [self getRequest: requestPath];
-    NSLog(@"Handshake Request: %@", getRequest);
     [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
 }
 
@@ -580,10 +578,6 @@ WebSocketWaitingState waitingState;
     if (aTag == TagHandshake) 
     {
         [aSocket readDataToData:[@"\r\n\r\n" dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
-    }
-    else if (aTag == TagMessage)
-    {
-        NSLog(@"Wrote message data");
     }
 }
 

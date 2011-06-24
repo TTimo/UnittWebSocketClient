@@ -323,14 +323,7 @@
     {
         self.mask = [self generateMask];
         self.opCode = aOpCode;
-        if (self.opCode == MessageOpCodeContinuation)
-        {
-            self.isFinal = NO;
-        }
-        else
-        {
-            self.isFinal = YES;
-        }
+        self.isFinal = aIsFinal;
         self.payloadData = aPayload;
         [self buildFragment];
     }

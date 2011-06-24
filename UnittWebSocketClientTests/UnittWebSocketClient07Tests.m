@@ -98,7 +98,7 @@
     STAssertEqualObjects(testText, @"Hello", @"Did not find the correct message.");
 }
 
-- (void) testRoundTrip
+- (void) notestRoundTrip
 {
     [self.ws open];
     [self waitForSeconds:10.0];
@@ -149,17 +149,36 @@
 
 - (void) testFragmentedText
 {
-    
+    const unsigned char firstBytes[5] = {0x01, 0x03, 0x48, 0x65, 0x6c};
+    NSData* firstSample = [NSData dataWithBytes:firstBytes length:5];
+    WebSocketFragment* firstFragment = [WebSocketFragment fragmentWithData:firstSample];
+    STAssertFalse(firstFragment.isFinal, @"Did set final bit.");
+    STAssertEquals(PayloadTypeText, firstFragment.payloadType, @"Did not find the correct payloadtype.");
+    STAssertEquals(MessageOpCodeText, firstFragment.opCode, @"Did not set op code to text");
+    STAssertFalse(firstFragment.hasMask, @"Did not find the correct has mask value.");
+    STAssertNotNil(firstFragment.payloadData, @"Did not build any payload data");
+    const unsigned char secondBytes[4] = {0x80, 0x02, 0x6c, 0x6f};
+    NSData* secondSample = [NSData dataWithBytes:secondBytes length:4];
+    WebSocketFragment* secondFragment = [WebSocketFragment fragmentWithData:secondSample];
+    STAssertTrue(secondFragment.isFinal, @"Did not set final bit.");
+    STAssertEquals(MessageOpCodeContinuation, secondFragment.opCode, @"Did not set op code to continuation");
+    STAssertFalse(secondFragment.hasMask, @"Did not find the correct has mask value.");
+    STAssertNotNil(secondFragment.payloadData, @"Did not build any payload data");
+    NSMutableData* messageData = [NSMutableData data];
+    [messageData appendData:firstFragment.payloadData];
+    [messageData appendData:secondFragment.payloadData];
+    NSString* message = [[[NSString alloc] initWithData:messageData encoding:NSUTF8StringEncoding] autorelease];
+    STAssertEqualObjects(message, @"Hello", @"Did not find the correct message.");
 }
 
 - (void) testUnmaskedBinary
 {
-    
-}
-
-- (void) testMaskedBinary
-{
-    
+    const unsigned char bytes[4] = {0x82, 0x7E, 0x01, 0x00};
+    NSData* sample = [NSData dataWithBytes:bytes length:4];
+    WebSocketFragment* fragment = [WebSocketFragment fragmentWithData:sample];
+    STAssertTrue(fragment.isFinal, @"Did not set final bit.");
+    STAssertEquals(fragment.payloadType, PayloadTypeBinary, @"Did not find the correct payloadtype.");
+    STAssertFalse(fragment.hasMask, @"Did not find the correct has mask value.");
 }
 
 @end
