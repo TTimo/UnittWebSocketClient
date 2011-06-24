@@ -56,7 +56,7 @@
 {
     [super setUp];
     
-    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:nil tlsSettings:nil verifyHandshake:false] retain];
+    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
 }
 
 - (void)tearDown
@@ -75,7 +75,7 @@
 - (void) testExample
 {
     [self.ws open];
-    [self waitForSeconds:120.0];
+    [self waitForSeconds:10.0];
     STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct phone.");
 }
 

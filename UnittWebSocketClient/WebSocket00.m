@@ -110,12 +110,12 @@ enum
 
 - (NSData*) getMD5:(NSData*) aPlainText 
 {
-    const unsigned char *cStr = [aPlainText bytes];
-    const unsigned char result[16];
-    CC_MD5( cStr, strlen(cStr), result );
+    unsigned char result[16];
+    CC_MD5( aPlainText.bytes, [aPlainText length], result );
     return [NSData dataWithBytes:result length:16];
 }
 
+// TODO: use key1, key2, key3 handshake stuff
 - (NSString*) getRequest: (NSString*) aRequestPath
 {
     [self generateSecKeys];
@@ -141,37 +141,31 @@ enum
                     "Host: %@\r\n"
                     "Origin: %@\r\n"
                     "Sec-WebSocket-Protocol: %@\r\n"
-                    "Sec-WebSocket-Version: 0\r\n"
-                    "Sec-WebSocket-Key1: %@\r\n"
-                    "Sec-WebSocket-Key2: %@\r\n"
-                    "\r\n%@",
-                    aRequestPath, self.url.host, self.origin, protocolFragment, key1, key2, [NSData dataWithBytes:&key3 length:8]];
+                    "\r\n",
+                    aRequestPath, self.url.host, self.origin, protocolFragment];
         }
     }
     
     //return request normally
-    
     return [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\n"
             "Upgrade: WebSocket\r\n"
             "Connection: Upgrade\r\n"
             "Host: %@\r\n"
             "Origin: %@\r\n"
-            "Sec-WebSocket-Version: 0\r\n"
-            "Sec-WebSocket-Key1: %@\r\n"
-            "Sec-WebSocket-Key2: %@\r\n"
-            "\r\n%@",
-            aRequestPath, self.url.host, self.origin, key1, key2, [[NSString alloc] initWithData:[NSData dataWithBytes:&key3 length:8] encoding:NSISOLatin1StringEncoding]];
-    
+            "\r\n",
+            aRequestPath, self.url.host, self.origin];
     /*
     return [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\n"
             "Upgrade: WebSocket\r\n"
             "Connection: Upgrade\r\n"
             "Host: %@\r\n"
             "Origin: %@\r\n"
+            "Sec-WebSocket-Key1: %@\r\n"
+            "Sec-WebSocket-Key2: %@\r\n"
             "Sec-WebSocket-Version: 0\r\n"
-            "\r\n",
-            aRequestPath, self.url.host, self.origin];
-    */
+            "\r\n@",
+            aRequestPath, self.url.host, self.origin, key1, key2, [[NSString alloc] initWithData:[NSData dataWithBytes:&key3 length:8] encoding:NSASCIIStringEncoding]];
+     */
 }
 
 int randFromRange(int min, int max)
@@ -181,33 +175,27 @@ int randFromRange(int min, int max)
 
 - (NSData*) createRandomBytes
 {
-    long long bytes = arc4random();
-    return [NSData dataWithBytes:(unsigned char*)&bytes length:sizeof(bytes)]; 
+    unsigned char bytes[8];
+    for (int i = 0; i < 8; i++) 
+    {
+        bytes[i] = randFromRange(0, 255) & 0xFF;
+    }
+    return [NSData dataWithBytes:bytes length:8]; 
 }
 
 - (NSString*) insertRandomCharacters: (NSString*) aString
 {
-    NSString* result = nil;
-    int count = randFromRange(1, 12);
     
-    unsigned char randomChars[count];
-    int randCount = 0;
-    while (randCount < count) 
-    {
-        int rand = (int) (arc4random() * 0x7e + 0x21);
-        if (((0x21 < rand) && (rand < 0x2f)) || ((0x3a < rand) && (rand < 0x7e))) 
-        {
-            randomChars[randCount] = (unsigned char) rand;
-        }
-        randCount += 1;
-    }
+    NSString *letters = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    NSString* result = aString;
+    int count = randFromRange(1, 12);
     
     for (int i = 0; i < count; i++) 
     {
-        int split = randFromRange(1, [aString length] - 1);
-        NSString* part1 = [aString substringWithRange:NSMakeRange(0, split)];
-        NSString* part2 = [aString substringWithRange:NSMakeRange(split, [aString length] - split)];
-        result = [NSString stringWithFormat:@"%@%c%@", part1, randomChars[i], part2];
+        int split = randFromRange(1, [result length] - 1);
+        NSString* part1 = [result substringWithRange:NSMakeRange(0, split)];
+        NSString* part2 = [result substringWithRange:NSMakeRange(split, [result length] - split)];
+        result = [NSString stringWithFormat:@"%@%c%@", part1, [letters characterAtIndex: randFromRange(0, [letters length])], part2];
     }
     
     return result;
@@ -215,12 +203,12 @@ int randFromRange(int min, int max)
 
 - (NSString*) insertSpaces:(int) aSpaces string:(NSString*) aString
 {
-    NSString* result = nil;
+    NSString* result = aString;
     for (int i = 0; i < aSpaces; i++) 
     {
-        int split = randFromRange(1, [aString length] - 1);
-        NSString* part1 = [aString substringWithRange:NSMakeRange(0, split)];
-        NSString* part2 = [aString substringWithRange:NSMakeRange(split, [aString length] - split)];
+        int split = randFromRange(1, [result length] - 1);
+        NSString* part1 = [result substringWithRange:NSMakeRange(0, split)];
+        NSString* part2 = [result substringWithRange:NSMakeRange(split, [result length] - split)];
         result = [NSString stringWithFormat:@"%@ %@", part1, part2];
     }
     
@@ -264,7 +252,7 @@ int randFromRange(int min, int max)
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
 {
-    NSLog(@"Handshake Response:\n%@", aResponse);
+    //NSLog(@"Handshake Response:\n%@", aResponse);
     //a HTTP 101 response is the only valid one
     if ([aResponse hasPrefix:@"HTTP/1.1 101"])
     {        
@@ -293,7 +281,7 @@ int randFromRange(int min, int max)
             //if we are verifying - do so
             if (!verifiedHandshake)
             {
-                NSData* handshakeData = [item dataUsingEncoding:NSUTF8StringEncoding];
+                NSData* handshakeData = [item dataUsingEncoding:NSASCIIStringEncoding];
                 verifiedHandshake = [handshakeData rangeOfData:serverHandshake options:NSDataSearchBackwards range:NSMakeRange(0, [handshakeData length])].length > 0;
             }
             
@@ -406,7 +394,7 @@ int randFromRange(int min, int max)
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }
     NSString* getRequest = [self getRequest: requestPath];
-    NSLog(@"Handshake Request: %@", getRequest);
+    //NSLog(@"Handshake Request: %@", getRequest);
     [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
 }
 
@@ -460,6 +448,7 @@ int randFromRange(int min, int max)
     return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake] autorelease];
 }
 
+// TODO: add verify handshake info 
 - (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocketDelegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     self = [super init];
@@ -492,7 +481,7 @@ int randFromRange(int min, int max)
         {
             tlsSettings = [aTlsSettings retain];
         }
-        verifyHandshake = aVerifyHandshake;
+        verifyHandshake = NO;
         socket = [[AsyncSocket alloc] initWithDelegate:self];
         self.timeout = 30.0;
     }
