@@ -65,6 +65,7 @@ typedef NSUInteger WebSocketReadyState;
  **/
 - (void) didReceiveBinaryMessage: (NSData*) aMessage;
 
+@optional
 /**
  * Called when pong is sent... For keep-alive optimization.
  **/

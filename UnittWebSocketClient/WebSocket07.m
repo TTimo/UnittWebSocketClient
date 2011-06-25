@@ -270,7 +270,10 @@ WebSocketWaitingState waitingState;
 - (void) handlePing:(NSData*) aMessage
 {
     [self sendMessage:aMessage messageWithOpCode:MessageOpCodePong];
-    [delegate didSendPong:aMessage];
+    if ([delegate respondsToSelector:@selector(didSendPong:)])
+    {
+        [delegate didSendPong:aMessage];
+    }
 }
 
 - (void) handleMessageData:(NSData*) aData
