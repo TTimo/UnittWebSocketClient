@@ -458,7 +458,7 @@ int randFromRange(int min, int max)
         NSURL* tempUrl = [NSURL URLWithString:aUrlString];
         if (![tempUrl.scheme isEqualToString:@"ws"] && ![tempUrl.scheme isEqualToString:@"wss"]) 
         {
-            [NSException raise:WebSocketException format:[NSString stringWithFormat:@"Unsupported protocol %@",tempUrl.scheme]];
+            [NSException raise:WebSocketException format:@"Unsupported protocol %@",tempUrl.scheme];
         }
         
         //apply properties

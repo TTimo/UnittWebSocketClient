@@ -20,6 +20,13 @@
 
 #import "WebSocketFragment.h"
 
+#ifndef htonll
+#define htonll(x) __DARWIN_OSSwapInt64(x) 
+#endif
+
+#ifndef ntohll
+#define ntohll(x) __DARWIN_OSSwapInt64(x) 
+#endif
 
 @implementation WebSocketFragment
 
@@ -125,7 +132,7 @@
     {
         bufferLength = [self.fragment length];
     }
-    const unsigned char buffer[bufferLength];
+    unsigned char buffer[bufferLength];
     [self.fragment getBytes:&buffer length:bufferLength];
     
     //determine opcode
@@ -153,7 +160,7 @@
             BOOL hasMask = buffer[index] & 0x80;
             
             //get payload length
-            long long dataLength = buffer[index++] & 0x7F;
+            unsigned long long dataLength = buffer[index++] & 0x7F;
             if (dataLength == 126)
             {
                 //exit if we are missing bytes
@@ -162,7 +169,10 @@
                     return;
                 }
                 
-                dataLength = buffer[index++] << 8 | buffer[index++];
+                unsigned short len;
+                memcpy(&len, &buffer[index], sizeof(len));
+                index += sizeof(len);
+                dataLength = ntohs(len);
             }
             else if (dataLength == 127)
             {
@@ -172,8 +182,10 @@
                     return;
                 }
                 
-                dataLength = buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];
-                dataLength = dataLength << 32 | buffer[index++] << 24 | buffer[index++] << 16 | buffer[index++] << 8 | buffer[index++];                    
+                unsigned long long len;
+                memcpy(&len, &buffer[index], sizeof(len));
+                index += sizeof(len);
+                dataLength = ntohll(len);                   
             }
             
             //if applicable, set mask value
@@ -217,7 +229,7 @@
     byte = 0x80;
     
     //payload length
-    long long fullPayloadLength = [self.payloadData length];
+    unsigned long long fullPayloadLength = [self.payloadData length];
     if (fullPayloadLength <= 125)
     {
         byte |= (fullPayloadLength & 0xFF);
@@ -227,14 +239,15 @@
     {
         byte |= 126;
         [temp appendBytes:&byte length:1];
-        short shortLength = fullPayloadLength & 0xFFFF;
+        short shortLength = htons(fullPayloadLength & 0xFFFF);
         [temp appendBytes:&shortLength length:2];
     }
     else if (fullPayloadLength <= INT64_MAX)
     {
         byte |= 127;
         [temp appendBytes:&byte length:1];
-        [temp appendBytes:&fullPayloadLength length:8];
+        unsigned long long longLength = htonll(fullPayloadLength);
+        [temp appendBytes:&longLength length:8];
     }
     
     //mask

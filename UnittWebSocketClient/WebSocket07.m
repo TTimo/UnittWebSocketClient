@@ -46,12 +46,13 @@ typedef NSUInteger WebSocketWaitingState;
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
 - (NSString*) getServerProtocol:(NSString*) aResponse;
 - (void) sendClose;
+- (void) sendMessage:(NSData*) aMessage messageWithOpCode:(MessageOpCode) aOpCode;
 - (void) sendMessage:(WebSocketFragment*) aFragment;
 - (void) handleMessageData:(NSData*) aData;
 - (void) handleCompleteFragment:(WebSocketFragment*) aFragment;
 - (void) handleCompleteFragments;
 - (void) handleClose:(WebSocketFragment*) aFragment;
-- (void) handlePing;
+- (void) handlePing:(NSData*) aMessage;
 - (void) closeSocket;
 @end
 
@@ -124,55 +125,26 @@ WebSocketWaitingState waitingState;
 - (void) sendText:(NSString*) aMessage
 {
     NSData* messageData = [aMessage dataUsingEncoding:NSUTF8StringEncoding];
-    NSUInteger messageLength = [messageData length];
-    if (messageLength <= self.maxPayloadSize)
-    {
-        //create and send fragment
-        WebSocketFragment* fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeText isFinal:YES payload:messageData];
-        [self sendMessage:fragment];
-    }
-    else
-    {
-        NSMutableArray* fragments = [NSMutableArray array];
-        unsigned int fragmentCount = messageLength / self.maxPayloadSize;
-        fragmentCount += messageLength % self.maxPayloadSize;
-        
-        //build fragments
-        for (int i = 0; i < fragmentCount; i++)
-        {
-            WebSocketFragment* fragment = nil;
-            unsigned int fragmentLength = self.maxPayloadSize;
-            if (i == 0)
-            {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeText isFinal:NO payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
-            }
-            else if (i == fragmentCount - 1)
-            {
-                fragmentLength = messageLength % self.maxPayloadSize;
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
-            }
-            else
-            {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:NO payload:[messageData subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
-            }
-            [fragments addObject:fragment];
-        }
-        
-        //send fragments
-        for (WebSocketFragment* fragment in fragments) 
-        {
-            [self sendMessage:fragment];
-        }
-    }
+    [self sendMessage:messageData messageWithOpCode:MessageOpCodeText];
 }
 
 - (void) sendBinary:(NSData*) aMessage
+{
+    [self sendMessage:aMessage messageWithOpCode:MessageOpCodeBinary];
+}
+
+- (void) sendPing:(NSData*) aMessage
+{
+    [self sendMessage:aMessage messageWithOpCode:MessageOpCodePing];
+}
+
+- (void) sendMessage:(NSData*) aMessage messageWithOpCode:(MessageOpCode) aOpCode
 {
     NSUInteger messageLength = [aMessage length];
     if (messageLength <= self.maxPayloadSize)
     {
         //create and send fragment
-        WebSocketFragment* fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeBinary isFinal:YES payload:aMessage];
+        WebSocketFragment* fragment = [WebSocketFragment fragmentWithOpCode:aOpCode isFinal:YES payload:aMessage];
         [self sendMessage:fragment];
     }
     else
@@ -188,7 +160,7 @@ WebSocketWaitingState waitingState;
             unsigned int fragmentLength = self.maxPayloadSize;
             if (i == 0)
             {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeBinary isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
+                fragment = [WebSocketFragment fragmentWithOpCode:aOpCode isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
             }
             else if (i == fragmentCount - 1)
             {
@@ -207,7 +179,7 @@ WebSocketWaitingState waitingState;
         {
             [self sendMessage:fragment];
         }
-    }
+    }    
 }
 
 - (void) sendMessage:(WebSocketFragment*) aFragment
@@ -248,7 +220,7 @@ WebSocketWaitingState waitingState;
             [self handleClose:aFragment];
             break;
         case MessageOpCodePing:
-            [self handlePing];
+            [self handlePing:aFragment.payloadData];
             break;
     }
 }
@@ -295,9 +267,10 @@ WebSocketWaitingState waitingState;
     }
 }
 
-- (void) handlePing
+- (void) handlePing:(NSData*) aMessage
 {
-    [self sendMessage:[WebSocketFragment fragmentWithOpCode:MessageOpCodePong isFinal:YES payload:nil]];
+    [self sendMessage:aMessage messageWithOpCode:MessageOpCodePong];
+    [delegate didSendPong:aMessage];
 }
 
 - (void) handleMessageData:(NSData*) aData
@@ -383,7 +356,7 @@ WebSocketWaitingState waitingState;
                     "Upgrade: WebSocket\r\n"
                     "Connection: Upgrade\r\n"
                     "Host: %@\r\n"
-                    "Origin: %@\r\n"
+                    "Sec-WebSocket-Origin: %@\r\n"
                     "Sec-WebSocket-Protocol: %@\r\n"
                     "Sec-WebSocket-Key: %@\r\n"
                     "Sec-WebSocket-Version: 7\r\n"
@@ -397,7 +370,7 @@ WebSocketWaitingState waitingState;
             "Upgrade: WebSocket\r\n"
             "Connection: Upgrade\r\n"
             "Host: %@\r\n"
-            "Origin: %@\r\n"
+            "Sec-WebSocket-Origin: %@\r\n"
             "Sec-WebSocket-Key: %@\r\n"
             "Sec-WebSocket-Version: 7\r\n"
             "\r\n",
@@ -631,7 +604,7 @@ WebSocketWaitingState waitingState;
         NSURL* tempUrl = [NSURL URLWithString:aUrlString];
         if (![tempUrl.scheme isEqualToString:@"ws"] && ![tempUrl.scheme isEqualToString:@"wss"]) 
         {
-            [NSException raise:WebSocketException format:[NSString stringWithFormat:@"Unsupported protocol %@",tempUrl.scheme]];
+            [NSException raise:WebSocketException format:@"Unsupported protocol %@",tempUrl.scheme];
         }
         
         //apply properties

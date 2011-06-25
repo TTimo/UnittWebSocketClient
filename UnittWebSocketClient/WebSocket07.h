@@ -65,6 +65,11 @@ typedef NSUInteger WebSocketReadyState;
  **/
 - (void) didReceiveBinaryMessage: (NSData*) aMessage;
 
+/**
+ * Called when pong is sent... For keep-alive optimization.
+ **/
+- (void) didSendPong: (NSData*) aMessage;
+
 @end
 
 
@@ -190,6 +195,10 @@ typedef NSUInteger WebSocketReadyState;
  **/
 - (void)sendBinary:(NSData*)message;
 
+/**
+ * Send ping message to the websocket
+ */
+- (void)sendPing:(NSData*)message;
 
 extern NSString *const WebSocketException;
 extern NSString *const WebSocketErrorDomain;

@@ -58,6 +58,11 @@
     NSLog(@"Did receive binary message:%@", aMessage);
 }
 
+- (void) didSendPong:(NSData *)aMessage
+{
+    NSLog(@"Did send pong");
+}
+
 #pragma mark Test
 - (void)setUp
 {
