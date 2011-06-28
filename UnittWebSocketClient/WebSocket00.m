@@ -21,7 +21,7 @@
 #import "WebSocket00.h"
 
 
-@interface WebSocket(Private)
+@interface WebSocket00(Private)
 - (void) dispatchFailure:(NSError*) aError;
 - (void) dispatchClosed:(NSError*) aWasClean;
 - (void) dispatchOpened;
@@ -36,10 +36,10 @@
 @end
 
 
-@implementation WebSocket
+@implementation WebSocket00
 
-NSString* const WebSocketException = @"WebSocketException";
-NSString* const WebSocketErrorDomain = @"WebSocketErrorDomain";
+NSString* const WebSocket00Exception = @"WebSocketException";
+NSString* const WebSocket00ErrorDomain = @"WebSocketErrorDomain";
 
 enum 
 {
@@ -75,7 +75,7 @@ enum
     }
     @catch (NSException *exception) 
     {
-        error = [NSError errorWithDomain:WebSocketErrorDomain code:0 userInfo:exception.userInfo]; 
+        error = [NSError errorWithDomain:WebSocket00ErrorDomain code:0 userInfo:exception.userInfo]; 
     }
     @finally 
     {
@@ -427,7 +427,7 @@ int randFromRange(int min, int max)
         } 
         else 
         {
-            [self dispatchFailure:[NSError errorWithDomain:WebSocketErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObject:@"Bad handshake" forKey:NSLocalizedFailureReasonErrorKey]]];
+            [self dispatchFailure:[NSError errorWithDomain:WebSocket00ErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObject:@"Bad handshake" forKey:NSLocalizedFailureReasonErrorKey]]];
         }
     } 
     else if (aTag == TagMessage) 
@@ -443,13 +443,13 @@ int randFromRange(int min, int max)
 
 
 #pragma mark Lifecycle
-+ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocketDelegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
++ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake] autorelease];
 }
 
 // TODO: add verify handshake info 
-- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocketDelegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
+- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     self = [super init];
     if (self) 
@@ -458,7 +458,7 @@ int randFromRange(int min, int max)
         NSURL* tempUrl = [NSURL URLWithString:aUrlString];
         if (![tempUrl.scheme isEqualToString:@"ws"] && ![tempUrl.scheme isEqualToString:@"wss"]) 
         {
-            [NSException raise:WebSocketException format:@"Unsupported protocol %@",tempUrl.scheme];
+            [NSException raise:WebSocket00Exception format:@"Unsupported protocol %@",tempUrl.scheme];
         }
         
         //apply properties

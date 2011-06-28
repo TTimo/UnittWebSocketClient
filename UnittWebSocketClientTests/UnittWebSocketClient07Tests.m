@@ -63,7 +63,7 @@
 - (void)setUp
 {
     [super setUp];
-    ws = [[WebSocket webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
+    ws = [[WebSocket07 webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
 }
 
 - (void)tearDown
@@ -99,7 +99,7 @@
     STAssertEqualObjects(testText, @"Hello", @"Did not find the correct message.");
 }
 
-- (void) notestRoundTrip
+- (void) testRoundTrip
 {
     [self.ws open];
     [self waitForSeconds:10.0];

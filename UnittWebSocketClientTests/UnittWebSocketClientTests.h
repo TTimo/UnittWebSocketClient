@@ -22,14 +22,14 @@
 #import "WebSocket00.h"
 
 
-@interface UnittWebSocketClientTests : SenTestCase <WebSocketDelegate>
+@interface UnittWebSocketClientTests : SenTestCase <WebSocket00Delegate>
 {
 @private
-    WebSocket* ws;
+    WebSocket00* ws;
     NSString* response;
 }
 
-@property (nonatomic, readonly) WebSocket* ws;
+@property (nonatomic, readonly) WebSocket00* ws;
 @property (nonatomic, readonly) NSString* response;
 
 - (void) waitForSeconds: (NSTimeInterval) aSeconds;

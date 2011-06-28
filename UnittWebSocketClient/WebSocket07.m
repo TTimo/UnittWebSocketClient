@@ -32,7 +32,7 @@ enum
 typedef NSUInteger WebSocketWaitingState;
 
 
-@interface WebSocket(Private)
+@interface WebSocket07(Private)
 - (void) dispatchFailure:(NSError*) aError;
 - (void) dispatchClosed:(NSError*) aWasClean;
 - (void) dispatchOpened ;
@@ -57,10 +57,10 @@ typedef NSUInteger WebSocketWaitingState;
 @end
 
 
-@implementation WebSocket
+@implementation WebSocket07
 
-NSString* const WebSocketException = @"WebSocketException";
-NSString* const WebSocketErrorDomain = @"WebSocketErrorDomain";
+NSString* const WebSocket07Exception = @"WebSocketException";
+NSString* const WebSocket07ErrorDomain = @"WebSocketErrorDomain";
 
 enum 
 {
@@ -98,7 +98,7 @@ WebSocketWaitingState waitingState;
     }
     @catch (NSException *exception) 
     {
-        error = [NSError errorWithDomain:WebSocketErrorDomain code:0 userInfo:exception.userInfo]; 
+        error = [NSError errorWithDomain:WebSocket07ErrorDomain code:0 userInfo:exception.userInfo]; 
     }
     @finally 
     {
@@ -578,7 +578,7 @@ WebSocketWaitingState waitingState;
         } 
         else 
         {
-            [self dispatchFailure:[NSError errorWithDomain:WebSocketErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObject:@"Bad handshake" forKey:NSLocalizedFailureReasonErrorKey]]];
+            [self dispatchFailure:[NSError errorWithDomain:WebSocket07ErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObject:@"Bad handshake" forKey:NSLocalizedFailureReasonErrorKey]]];
         }
     } 
     else if (aTag == TagMessage) 
@@ -593,12 +593,12 @@ WebSocketWaitingState waitingState;
 
 
 #pragma mark Lifecycle
-+ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocketDelegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
++ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake] autorelease];
 }
 
-- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocketDelegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
+- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     self = [super init];
     if (self) 
@@ -607,7 +607,7 @@ WebSocketWaitingState waitingState;
         NSURL* tempUrl = [NSURL URLWithString:aUrlString];
         if (![tempUrl.scheme isEqualToString:@"ws"] && ![tempUrl.scheme isEqualToString:@"wss"]) 
         {
-            [NSException raise:WebSocketException format:@"Unsupported protocol %@",tempUrl.scheme];
+            [NSException raise:WebSocket07Exception format:@"Unsupported protocol %@",tempUrl.scheme];
         }
         
         //apply properties

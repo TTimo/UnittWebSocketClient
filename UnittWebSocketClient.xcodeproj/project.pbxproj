@@ -20,6 +20,8 @@
 		BD27705413A594BC00E578FE /* WebSocketMessage.h in Headers */ = {isa = PBXBuildFile; fileRef = BD27705213A594BC00E578FE /* WebSocketMessage.h */; };
 		BD27705513A594BC00E578FE /* WebSocketMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = BD27705313A594BC00E578FE /* WebSocketMessage.m */; };
 		BD27705613A594BC00E578FE /* WebSocketMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = BD27705313A594BC00E578FE /* WebSocketMessage.m */; };
+		BD4A963513B974B600E132E9 /* WebSocket00.m in Sources */ = {isa = PBXBuildFile; fileRef = BD8D92841370B2230018753B /* WebSocket00.m */; };
+		BD4A963613B974B600E132E9 /* UnittWebSocketClientTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BD0C3267136FA7CB008B53D7 /* UnittWebSocketClientTests.m */; };
 		BD52961313A96FDE00BCFE82 /* WebSocket00.h in Headers */ = {isa = PBXBuildFile; fileRef = BD52961213A96FDE00BCFE82 /* WebSocket00.h */; };
 		BD65D9C8136FAB8C005B02F9 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD65D9C6136FAB8C005B02F9 /* CFNetwork.framework */; };
 		BD65D9C9136FAB8C005B02F9 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD65D9C7136FAB8C005B02F9 /* Security.framework */; };
@@ -319,6 +321,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BD4A963513B974B600E132E9 /* WebSocket00.m in Sources */,
+				BD4A963613B974B600E132E9 /* UnittWebSocketClientTests.m in Sources */,
 				BDD3FD0E13B47C3000E861E6 /* WebSocket07.m in Sources */,
 				BDD3FD0F13B47C3000E861E6 /* UnittWebSocketClient07Tests.m in Sources */,
 				BDD61A8513B1A71600FF3358 /* MutableQueue.m in Sources */,
@@ -355,7 +359,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				CURRENT_PROJECT_VERSION = 2.1;
+				CURRENT_PROJECT_VERSION = 2.2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
@@ -372,7 +376,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				CURRENT_PROJECT_VERSION = 2.1;
+				CURRENT_PROJECT_VERSION = 2.2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;

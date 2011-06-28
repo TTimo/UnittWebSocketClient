@@ -37,7 +37,7 @@ enum
 typedef NSUInteger WebSocketReadyState;
 
 
-@protocol WebSocketDelegate <NSObject>
+@protocol WebSocket07Delegate <NSObject>
 
 /**
  * Called when the web socket connects and is ready for reading and writing.
@@ -74,10 +74,10 @@ typedef NSUInteger WebSocketReadyState;
 @end
 
 
-@interface WebSocket : NSObject 
+@interface WebSocket07 : NSObject 
 {
 @private
-    id<WebSocketDelegate> delegate;
+    id<WebSocket07Delegate> delegate;
     NSURL* url;
     NSString* origin;
     AsyncSocket* socket;
@@ -100,7 +100,7 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * Callback delegate for websocket events.
  **/
-@property(nonatomic,retain) id<WebSocketDelegate> delegate;
+@property(nonatomic,retain) id<WebSocket07Delegate> delegate;
 
 /**
  * Max size of the payload. Any messages larger will be sent as fragments.
@@ -172,8 +172,8 @@ typedef NSUInteger WebSocketReadyState;
 @property(nonatomic,readonly) NSString* serverProtocol;
 
 
-+ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocketDelegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
-- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocketDelegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
++ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
+- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
 
 
 /**
@@ -201,7 +201,7 @@ typedef NSUInteger WebSocketReadyState;
  */
 - (void)sendPing:(NSData*)message;
 
-extern NSString *const WebSocketException;
-extern NSString *const WebSocketErrorDomain;
+extern NSString *const WebSocket07Exception;
+extern NSString *const WebSocket07ErrorDomain;
 
 @end
