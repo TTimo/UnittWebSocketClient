@@ -151,7 +151,10 @@ WebSocketWaitingState waitingState;
     {
         NSMutableArray* fragments = [NSMutableArray array];
         unsigned int fragmentCount = messageLength / self.maxPayloadSize;
-        fragmentCount += messageLength % self.maxPayloadSize;
+        if (messageLength % self.maxPayloadSize)
+        {
+            fragmentCount++;
+        }
         
         //build fragments
         for (int i = 0; i < fragmentCount; i++)
@@ -202,6 +205,13 @@ WebSocketWaitingState waitingState;
 
 - (void) handleCompleteFragment:(WebSocketFragment*) aFragment
 {
+    //if we are not in continuation and its final, dequeue
+    if (aFragment.isFinal && aFragment.opCode != MessageOpCodeContinuation)
+    {
+        [pendingFragments dequeue];
+    }
+    
+    //continue to process
     switch (aFragment.opCode) 
     {
         case MessageOpCodeContinuation:
@@ -211,10 +221,16 @@ WebSocketWaitingState waitingState;
             }
             break;
         case MessageOpCodeText:
-            [self dispatchTextMessageReceived:[[[NSString alloc] initWithData:aFragment.payloadData encoding:NSUTF8StringEncoding] autorelease]];
+            if (aFragment.isFinal)
+            {
+                [self dispatchTextMessageReceived:[[[NSString alloc] initWithData:aFragment.payloadData encoding:NSUTF8StringEncoding] autorelease]];
+            }
             break;
         case MessageOpCodeBinary:
-            [self dispatchBinaryMessageReceived:aFragment.payloadData];
+            if (aFragment.isFinal)
+            {
+                [self dispatchBinaryMessageReceived:aFragment.payloadData];
+            }
             break;
         case MessageOpCodeClose:
             [self handleClose:aFragment];
@@ -280,12 +296,11 @@ WebSocketWaitingState waitingState;
 {
     //grab last fragment, use if not complete
     WebSocketFragment* fragment = [pendingFragments lastObject];
-    BOOL isNewFragment = NO;
     if (!fragment || fragment.isValid)
     {
         //assign web socket fragment since the last one was complete
         fragment = [WebSocketFragment fragmentWithData:aData];
-        isNewFragment = YES;
+        [pendingFragments enqueue:fragment];
     }
     else if (fragment)
     {
@@ -304,10 +319,6 @@ WebSocketWaitingState waitingState;
         {
             [self handleMessageData:[aData subdataWithRange:NSMakeRange(fragment.messageLength, [aData length] - fragment.messageLength)]];
         }
-    }
-    else if (isNewFragment)
-    {
-        [pendingFragments enqueue:fragment];
     }
 }
 
