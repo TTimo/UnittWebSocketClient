@@ -305,6 +305,10 @@ WebSocketWaitingState waitingState;
     else if (fragment)
     {
         [fragment.fragment appendData:aData];
+        if (fragment.isFragmentEnough) 
+        {
+            [fragment parseContent];
+        }
     }
     
     
