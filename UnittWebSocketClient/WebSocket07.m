@@ -124,8 +124,12 @@ WebSocketWaitingState waitingState;
 
 - (void) sendText:(NSString*) aMessage
 {
-    NSData* messageData = [aMessage dataUsingEncoding:NSUTF8StringEncoding];
-    [self sendMessage:messageData messageWithOpCode:MessageOpCodeText];
+    //no reason to grab data if we won't send it anyways
+    if (!isClosing)
+    {
+        NSData* messageData = [aMessage dataUsingEncoding:NSUTF8StringEncoding];
+        [self sendMessage:messageData messageWithOpCode:MessageOpCodeText];
+    }
 }
 
 - (void) sendBinary:(NSData*) aMessage
@@ -140,54 +144,60 @@ WebSocketWaitingState waitingState;
 
 - (void) sendMessage:(NSData*) aMessage messageWithOpCode:(MessageOpCode) aOpCode
 {
-    NSUInteger messageLength = [aMessage length];
-    if (messageLength <= self.maxPayloadSize)
+    if (!isClosing)
     {
-        //create and send fragment
-        WebSocketFragment* fragment = [WebSocketFragment fragmentWithOpCode:aOpCode isFinal:YES payload:aMessage];
-        [self sendMessage:fragment];
-    }
-    else
-    {
-        NSMutableArray* fragments = [NSMutableArray array];
-        unsigned int fragmentCount = messageLength / self.maxPayloadSize;
-        if (messageLength % self.maxPayloadSize)
+        NSUInteger messageLength = [aMessage length];
+        if (messageLength <= self.maxPayloadSize)
         {
-            fragmentCount++;
-        }
-        
-        //build fragments
-        for (int i = 0; i < fragmentCount; i++)
-        {
-            WebSocketFragment* fragment = nil;
-            unsigned int fragmentLength = self.maxPayloadSize;
-            if (i == 0)
-            {
-                fragment = [WebSocketFragment fragmentWithOpCode:aOpCode isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
-            }
-            else if (i == fragmentCount - 1)
-            {
-                fragmentLength = messageLength % self.maxPayloadSize;
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
-            }
-            else
-            {
-                fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
-            }
-            [fragments addObject:fragment];
-        }
-        
-        //send fragments
-        for (WebSocketFragment* fragment in fragments) 
-        {
+            //create and send fragment
+            WebSocketFragment* fragment = [WebSocketFragment fragmentWithOpCode:aOpCode isFinal:YES payload:aMessage];
             [self sendMessage:fragment];
         }
-    }    
+        else
+        {
+            NSMutableArray* fragments = [NSMutableArray array];
+            unsigned int fragmentCount = messageLength / self.maxPayloadSize;
+            if (messageLength % self.maxPayloadSize)
+            {
+                fragmentCount++;
+            }
+            
+            //build fragments
+            for (int i = 0; i < fragmentCount; i++)
+            {
+                WebSocketFragment* fragment = nil;
+                unsigned int fragmentLength = self.maxPayloadSize;
+                if (i == 0)
+                {
+                    fragment = [WebSocketFragment fragmentWithOpCode:aOpCode isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
+                }
+                else if (i == fragmentCount - 1)
+                {
+                    fragmentLength = messageLength % self.maxPayloadSize;
+                    fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
+                }
+                else
+                {
+                    fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:NO payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
+                }
+                [fragments addObject:fragment];
+            }
+            
+            //send fragments
+            for (WebSocketFragment* fragment in fragments) 
+            {
+                [self sendMessage:fragment];
+            }
+        }  
+    }
 }
 
 - (void) sendMessage:(WebSocketFragment*) aFragment
 {
-    [socket writeData:aFragment.fragment withTimeout:self.timeout tag:TagMessage];
+    if (!isClosing || aFragment.opCode == MessageOpCodeClose)
+    {
+        [socket writeData:aFragment.fragment withTimeout:self.timeout tag:TagMessage];
+    }
 }
 
 
@@ -270,16 +280,16 @@ WebSocketWaitingState waitingState;
     }
 }
 
-// TODO: handle a close op code
 - (void) handleClose:(WebSocketFragment*) aFragment
 {
     if (isClosing)
     {
-        [self close];
+        [self closeSocket];
     }
     else
     {
         isClosing = YES;
+        [self close];
     }
 }
 
