@@ -501,7 +501,7 @@ WebSocketWaitingState waitingState;
                     "Sec-WebSocket-Origin: %@\r\n"
                     "Sec-WebSocket-Protocol: %@\r\n"
                     "Sec-WebSocket-Key: %@\r\n"
-                    "Sec-WebSocket-Version: 8\r\n"
+                    "Sec-WebSocket-Version: 10\r\n"
                     "\r\n",
                     aRequestPath, self.url.host, self.origin, protocolFragment, wsSecKey];
         }
@@ -514,7 +514,7 @@ WebSocketWaitingState waitingState;
             "Host: %@\r\n"
             "Sec-WebSocket-Origin: %@\r\n"
             "Sec-WebSocket-Key: %@\r\n"
-            "Sec-WebSocket-Version: 8\r\n"
+            "Sec-WebSocket-Version: 10\r\n"
             "\r\n",
             aRequestPath, self.url.host, self.origin, wsSecKey];
 }
