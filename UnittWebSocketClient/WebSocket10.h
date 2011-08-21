@@ -1,5 +1,5 @@
 //
-//  WebSocket07.h
+//  WebSocket10.h
 //  UnittWebSocketClient
 //
 //  Created by Josh Morris on 5/3/11.
@@ -40,8 +40,16 @@ enum
                                                 //because it has received a type of data it cannot accept 
                                                 //(e.g. an endpoint that understands only text data MAY 
                                                 //send this if it receives a binary message)
-    WebSocketCloseStatusMessageTooLarge = 1004 //indicates that an endpoint is terminating the connection
-                                               //because it has received a message that is too large
+    WebSocketCloseStatusMessageTooLarge = 1004, //indicates that an endpoint is terminating the connection
+                                                //because it has received a message that is too large
+    WebSocketCloseStatusNormalButMissingStatus = 1005, //designated for use in applications expecting a status code 
+                                                       //to indicate that no status code was actually present
+    WebSocketCloseStatusAbnormalButMissingStatus = 1006, //designated for use in	applications expecting a status code
+                                                        //to indicate that the connection was closed abnormally, e.g.
+                                                        //without sending or receiving a Close control frame.
+    WebSocketCloseStatusInvalidUtf8 = 1007 //indicates that an endpoint is terminating the connection because it has 
+                                           //received data that was supposed to be UTF-8 (such as in a text frame) that 
+                                           //was in fact not valid UTF-8
 };
 typedef NSUInteger WebSocketCloseStatus;
 
@@ -55,7 +63,7 @@ enum
 typedef NSUInteger WebSocketReadyState;
 
 
-@protocol WebSocket07Delegate <NSObject>
+@protocol WebSocket10Delegate <NSObject>
 
 /**
  * Called when the web socket connects and is ready for reading and writing.
@@ -92,10 +100,10 @@ typedef NSUInteger WebSocketReadyState;
 @end
 
 
-@interface WebSocket07 : NSObject 
+@interface WebSocket10 : NSObject 
 {
 @private
-    id<WebSocket07Delegate> delegate;
+    id<WebSocket10Delegate> delegate;
     NSURL* url;
     NSString* origin;
     AsyncSocket* socket;
@@ -122,7 +130,7 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * Callback delegate for websocket events.
  **/
-@property(nonatomic,retain) id<WebSocket07Delegate> delegate;
+@property(nonatomic,retain) id<WebSocket10Delegate> delegate;
 
 /**
  * Max size of the payload. Any messages larger will be sent as fragments.
@@ -200,8 +208,8 @@ typedef NSUInteger WebSocketReadyState;
 @property(nonatomic,readonly) NSString* serverProtocol;
 
 
-+ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
-- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
++ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket10Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
+- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket10Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
 
 
 /**
@@ -234,7 +242,7 @@ typedef NSUInteger WebSocketReadyState;
  */
 - (void) sendPing:(NSData*)message;
 
-extern NSString *const WebSocket07Exception;
-extern NSString *const WebSocket07ErrorDomain;
+extern NSString *const WebSocket10Exception;
+extern NSString *const WebSocket10ErrorDomain;
 
 @end

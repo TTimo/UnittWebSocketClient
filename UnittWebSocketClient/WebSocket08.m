@@ -1,5 +1,5 @@
 //
-//  WebSocket07.m
+//  WebSocket08.m
 //  UnittWebSocketClient
 //
 //  Created by Josh Morris on 5/3/11.
@@ -18,7 +18,7 @@
 //  the License.
 //
 
-#import "WebSocket07.h"
+#import "WebSocket08.h"
 #import "WebSocketFragment.h"
 
 
@@ -32,7 +32,7 @@ enum
 typedef NSUInteger WebSocketWaitingState;
 
 
-@interface WebSocket07(Private)
+@interface WebSocket08(Private)
 - (void) dispatchFailure:(NSError*) aError;
 - (void) dispatchClosed:(NSUInteger) aStatusCode message:(NSString*) aMessage error:(NSError*) aError;
 - (void) dispatchOpened;
@@ -59,10 +59,10 @@ typedef NSUInteger WebSocketWaitingState;
 @end
 
 
-@implementation WebSocket07
+@implementation WebSocket08
 
-NSString* const WebSocket07Exception = @"WebSocketException";
-NSString* const WebSocket07ErrorDomain = @"WebSocketErrorDomain";
+NSString* const WebSocket08Exception = @"WebSocketException";
+NSString* const WebSocket08ErrorDomain = @"WebSocketErrorDomain";
 
 enum 
 {
@@ -98,12 +98,12 @@ WebSocketWaitingState waitingState;
     @try 
     {
         successful = [socket connectToHost:self.url.host onPort:port error:&error];
-        closeStatusCode = WebSocketCloseStatusNormal;
+        closeStatusCode = 0;
         closeMessage = nil;
     }
     @catch (NSException *exception) 
     {
-        error = [NSError errorWithDomain:WebSocket07ErrorDomain code:0 userInfo:exception.userInfo]; 
+        error = [NSError errorWithDomain:WebSocket08ErrorDomain code:0 userInfo:exception.userInfo]; 
     }
     @finally 
     {
@@ -309,7 +309,7 @@ WebSocketWaitingState waitingState;
         //init
         NSMutableData* messageData = [NSMutableData data];
         MessageOpCode messageOpCode = fragment.opCode;
-    
+        
         //loop through, constructing single message
         while (fragment != nil) 
         {
@@ -457,7 +457,7 @@ WebSocketWaitingState waitingState;
                     "Sec-WebSocket-Origin: %@\r\n"
                     "Sec-WebSocket-Protocol: %@\r\n"
                     "Sec-WebSocket-Key: %@\r\n"
-                    "Sec-WebSocket-Version: 7\r\n"
+                    "Sec-WebSocket-Version: 8\r\n"
                     "\r\n",
                     aRequestPath, self.url.host, self.origin, protocolFragment, wsSecKey];
         }
@@ -470,7 +470,7 @@ WebSocketWaitingState waitingState;
             "Host: %@\r\n"
             "Sec-WebSocket-Origin: %@\r\n"
             "Sec-WebSocket-Key: %@\r\n"
-            "Sec-WebSocket-Version: 7\r\n"
+            "Sec-WebSocket-Version: 8\r\n"
             "\r\n",
             aRequestPath, self.url.host, self.origin, wsSecKey];
 }
@@ -601,6 +601,17 @@ WebSocketWaitingState waitingState;
 - (void) onSocketDidDisconnect:(AsyncSocket*) aSock 
 {
     readystate = WebSocketReadyStateClosed;
+    if (closeStatusCode == 0)
+    {
+        if (closingError != nil)
+        {
+            closeStatusCode = WebSocketCloseStatusAbnormalButMissingStatus;
+        }
+        else
+        {
+            closeStatusCode = WebSocketCloseStatusNormalButMissingStatus;
+        }
+    }
     [self dispatchClosed:closeStatusCode message:closeMessage error:closingError];
 }
 
@@ -673,7 +684,7 @@ WebSocketWaitingState waitingState;
         } 
         else 
         {
-            [self dispatchFailure:[NSError errorWithDomain:WebSocket07ErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObject:@"Bad handshake" forKey:NSLocalizedFailureReasonErrorKey]]];
+            [self dispatchFailure:[NSError errorWithDomain:WebSocket08ErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObject:@"Bad handshake" forKey:NSLocalizedFailureReasonErrorKey]]];
         }
     } 
     else if (aTag == TagMessage) 
@@ -688,12 +699,12 @@ WebSocketWaitingState waitingState;
 
 
 #pragma mark Lifecycle
-+ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
++ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket08Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake] autorelease];
 }
 
-- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket07Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
+- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket08Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     self = [super init];
     if (self) 
@@ -702,7 +713,7 @@ WebSocketWaitingState waitingState;
         NSURL* tempUrl = [NSURL URLWithString:aUrlString];
         if (![tempUrl.scheme isEqualToString:@"ws"] && ![tempUrl.scheme isEqualToString:@"wss"]) 
         {
-            [NSException raise:WebSocket07Exception format:@"Unsupported protocol %@",tempUrl.scheme];
+            [NSException raise:WebSocket08Exception format:@"Unsupported protocol %@",tempUrl.scheme];
         }
         
         //apply properties

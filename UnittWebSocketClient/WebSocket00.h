@@ -1,5 +1,5 @@
 //
-//  WebSocket.h
+//  WebSocket00.h
 //  UnittWebSocketClient
 //
 //  Created by Josh Morris on 5/3/11.
