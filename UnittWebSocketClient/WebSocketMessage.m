@@ -58,7 +58,7 @@
     self = [super init];
     if (self)
     {
-        fragments = [[NSMutableData alloc] init];
+        fragments = [[NSMutableArray alloc] init];
         [self pushFragment:aFragment];
     }
     return self;
@@ -69,7 +69,7 @@
     self = [super init];
     if (self)
     {
-        fragments = [[NSMutableData alloc] init];
+        fragments = [[NSMutableArray alloc] init];
     }
     return self;
 }
