@@ -34,8 +34,10 @@
     [self.ws sendText:@"Blue"];
 }
 
-- (void) didClose: (NSError*) aError
+- (void) didClose:(NSUInteger) aStatusCode message:(NSString*) aMessage error:(NSError*) aError
 {
+    NSLog(@"Status Code: %i", aStatusCode);
+    NSLog(@"Close Message: %@", aMessage);
     NSLog(@"Error: %@", [aError localizedDescription]);
 }
 
@@ -64,6 +66,7 @@
 {
     [super setUp];
     ws = [[WebSocket07 webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
+    ws.closeTimeout = 15.0;
 }
 
 - (void)tearDown
@@ -104,6 +107,8 @@
     [self.ws open];
     [self waitForSeconds:10.0];
     STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct phone.");
+    [self.ws close:WebSocketCloseStatusMessageTooLarge message:@"woah"];
+    [self waitForSeconds:10.0];
 }
 
 - (void) testUnmaskedText

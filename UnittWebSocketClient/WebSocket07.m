@@ -34,8 +34,8 @@ typedef NSUInteger WebSocketWaitingState;
 
 @interface WebSocket07(Private)
 - (void) dispatchFailure:(NSError*) aError;
-- (void) dispatchClosed:(NSError*) aWasClean;
-- (void) dispatchOpened ;
+- (void) dispatchClosed:(NSUInteger) aStatusCode message:(NSString*) aMessage error:(NSError*) aError;
+- (void) dispatchOpened;
 - (void) dispatchTextMessageReceived:(NSString*) aMessage;
 - (void) dispatchBinaryMessageReceived:(NSData*) aMessage;
 - (void) continueReadingMessageStream;
@@ -45,7 +45,7 @@ typedef NSUInteger WebSocketWaitingState;
 - (void) generateSecKeys;
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
 - (NSString*) getServerProtocol:(NSString*) aResponse;
-- (void) sendClose;
+- (void) sendClose:(NSUInteger) aStatusCode message:(NSString*) aMessage;
 - (void) sendMessage:(NSData*) aMessage messageWithOpCode:(MessageOpCode) aOpCode;
 - (void) sendMessage:(WebSocketFragment*) aFragment;
 - (void) handleMessageData:(NSData*) aData;
@@ -54,6 +54,8 @@ typedef NSUInteger WebSocketWaitingState;
 - (void) handleClose:(WebSocketFragment*) aFragment;
 - (void) handlePing:(NSData*) aMessage;
 - (void) closeSocket;
+- (void) scheduleForceCloseCheck:(NSTimeInterval) aInterval;
+- (void) checkClose:(NSTimer*) aTimer;
 @end
 
 
@@ -76,6 +78,7 @@ WebSocketWaitingState waitingState;
 @synthesize origin;
 @synthesize readystate;
 @synthesize timeout;
+@synthesize closeTimeout;
 @synthesize tlsSettings;
 @synthesize protocols;
 @synthesize verifyHandshake;
@@ -95,6 +98,8 @@ WebSocketWaitingState waitingState;
     @try 
     {
         successful = [socket connectToHost:self.url.host onPort:port error:&error];
+        closeStatusCode = WebSocketCloseStatusNormal;
+        closeMessage = nil;
     }
     @catch (NSException *exception) 
     {
@@ -104,22 +109,67 @@ WebSocketWaitingState waitingState;
     {
         if (!successful)
         {
-            [self dispatchClosed:error];
+            [self dispatchClosed:WebSocketCloseStatusProtocolError message:nil error:error];
         }
     }
 }
 
 - (void) close
 {
+    [self close:WebSocketCloseStatusNormal message:nil];
+}
+
+- (void) close:(NSUInteger) aStatusCode message:(NSString*) aMessage
+{
     readystate = WebSocketReadyStateClosing;
-    [self sendClose];
+    [self sendClose:aStatusCode message:aMessage];
     isClosing = YES;
 }
 
-// TODO: put in timer to force close after message timeout
-- (void) sendClose
+- (void) scheduleForceCloseCheck
 {
-    [self sendMessage:[WebSocketFragment fragmentWithOpCode:MessageOpCodeClose isFinal:YES payload:nil]];
+    [NSTimer scheduledTimerWithTimeInterval:self.closeTimeout
+                                     target:self
+                                   selector:@selector(checkClose:)
+                                   userInfo:nil
+                                    repeats:NO];
+}
+
+- (void) checkClose:(NSTimer*) aTimer
+{
+    if (self.readystate == WebSocketReadyStateClosing)
+    {
+        [self closeSocket];
+    }
+}
+
+- (void) sendClose:(NSUInteger) aStatusCode message:(NSString*) aMessage
+{
+    //create payload
+    NSMutableData* payload = nil;
+    if (aStatusCode > 0)
+    {
+        closeStatusCode = aStatusCode;
+        payload = [NSMutableData data];
+        unsigned char current = (unsigned char)(aStatusCode%0x100);
+        [payload appendBytes:&current length:1];
+        current = (unsigned char)(aStatusCode/0x100);
+        [payload appendBytes:&current length:1];
+        if (aMessage)
+        {
+            closeMessage = aMessage;
+            [payload appendData:[aMessage dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+    }
+    
+    //send close message
+    [self sendMessage:[WebSocketFragment fragmentWithOpCode:MessageOpCodeClose isFinal:YES payload:payload]];
+    
+    //schedule the force close
+    if (self.closeTimeout >= 0)
+    {
+        [self scheduleForceCloseCheck];
+    }
 }
 
 - (void) sendText:(NSString*) aMessage
@@ -282,6 +332,26 @@ WebSocketWaitingState waitingState;
 
 - (void) handleClose:(WebSocketFragment*) aFragment
 {
+    //close status & message
+    if (aFragment.payloadData)
+    {
+        NSUInteger length = aFragment.payloadData.length;
+        if (length >= 2)
+        {
+            //get status code
+            unsigned char buffer[2];
+            [aFragment.payloadData getBytes:&buffer length:2];
+            closeStatusCode = buffer[0] << 8 | buffer[1];
+            
+            //get message
+            if (length > 2)
+            {
+                closeMessage = [[NSString alloc] initWithData:[aFragment.payloadData subdataWithRange:NSMakeRange(2, length - 2)] encoding:NSUTF8StringEncoding];
+            }
+        }
+    }
+    
+    //handle close
     if (isClosing)
     {
         [self closeSocket];
@@ -315,7 +385,7 @@ WebSocketWaitingState waitingState;
     else if (fragment)
     {
         [fragment.fragment appendData:aData];
-        if (fragment.isFragmentEnough) 
+        if (fragment.isValid) 
         {
             [fragment parseContent];
         }
@@ -323,7 +393,7 @@ WebSocketWaitingState waitingState;
     
     
     //if we have a complete fragment, handle it
-    if (fragment.isFragmentEnough) 
+    if (fragment.isValid) 
     {
         //handle complete fragment
         [self handleCompleteFragment:fragment];
@@ -493,11 +563,11 @@ WebSocketWaitingState waitingState;
     }
 }
 
-- (void) dispatchClosed:(NSError*) aError
+- (void) dispatchClosed:(NSUInteger) aStatusCode message:(NSString*) aMessage error:(NSError*) aError
 {
     if (delegate)
     {
-        [delegate didClose: aError];
+        [delegate didClose:aStatusCode message:aMessage error:aError];
         [aError release];
     }
 }
@@ -531,7 +601,7 @@ WebSocketWaitingState waitingState;
 - (void) onSocketDidDisconnect:(AsyncSocket*) aSock 
 {
     readystate = WebSocketReadyStateClosed;
-    [self dispatchClosed: closingError];
+    [self dispatchClosed:closeStatusCode message:closeMessage error:closingError];
 }
 
 - (void) onSocket:(AsyncSocket *) aSocket willDisconnectWithError:(NSError *) aError
@@ -658,6 +728,7 @@ WebSocketWaitingState waitingState;
         verifyHandshake = aVerifyHandshake;
         socket = [[AsyncSocket alloc] initWithDelegate:self];
         self.timeout = 30.0;
+        self.closeTimeout = 30.0;
         maxPayloadSize = 32*1024;
         pendingFragments = [[MutableQueue alloc] init];
         isClosing = NO;
@@ -687,6 +758,7 @@ WebSocketWaitingState waitingState;
     [protocols release];
     [tlsSettings release];
     [pendingFragments release];
+    [closeMessage release];
     [super dealloc];
 }
 

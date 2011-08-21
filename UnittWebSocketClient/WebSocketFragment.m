@@ -60,7 +60,7 @@
     return self.opCode == MessageOpCodeContinuation || self.opCode == MessageOpCodeText || self.opCode == MessageOpCodeBinary;
 }
 
-- (BOOL) isFragmentEnough
+- (BOOL) isValid
 {
     if (self.messageLength > 0)
     {
@@ -68,16 +68,6 @@
     }
     
     return NO;
-}
-
-- (BOOL) isValid
-{
-    if (self.messageLength)
-    {
-        return payloadStart + payloadLength == [fragment length];
-    }
-    
-    return self.messageLength;
 }
 
 - (BOOL) isHeaderValid

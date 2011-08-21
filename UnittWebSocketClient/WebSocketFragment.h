@@ -68,7 +68,6 @@ typedef NSInteger PayloadLength;
 @property (nonatomic,readonly) BOOL isControlFrame;
 @property (nonatomic,readonly) BOOL isDataFrame;
 @property (nonatomic,readonly) BOOL isValid;
-@property (nonatomic,readonly) BOOL isFragmentEnough;
 @property (nonatomic,readonly) BOOL isHeaderValid;
 @property (nonatomic,assign) int mask;
 @property (nonatomic,assign) MessageOpCode opCode;

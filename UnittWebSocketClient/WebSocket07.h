@@ -29,6 +29,24 @@
 
 enum 
 {
+    WebSocketCloseStatusNormal = 1000, //indicates a normal closure, meaning whatever purpose the 
+                                       //connection was established for has been fulfilled
+    WebSocketCloseStatusEndpointGone = 1001, //indicates that an endpoint is "going away", such as a 
+                                             //server going down, or a browser having navigated away from 
+                                             //a page
+    WebSocketCloseStatusProtocolError = 1002, //indicates that an endpoint is terminating the connection 
+                                              //due to a protocol error
+    WebSocketCloseStatusInvalidDataType = 1003, //indicates that an endpoint is terminating the connection
+                                                //because it has received a type of data it cannot accept 
+                                                //(e.g. an endpoint that understands only text data MAY 
+                                                //send this if it receives a binary message)
+    WebSocketCloseStatusMessageTooLarge = 1004 //indicates that an endpoint is terminating the connection
+                                               //because it has received a message that is too large
+};
+typedef NSUInteger WebSocketCloseStatus;
+
+enum 
+{
     WebSocketReadyStateConnecting = 0, //The connection has not yet been established.
     WebSocketReadyStateOpen = 1, //The WebSocket connection is established and communication is possible.
     WebSocketReadyStateClosing = 2, //The connection is going through the closing handshake.
@@ -47,29 +65,29 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * Called when the web socket closes. aError will be nil if it closes cleanly.
  **/
-- (void) didClose: (NSError*) aError;
+- (void) didClose:(NSUInteger) aStatusCode message:(NSString*) aMessage error:(NSError*) aError;
 
 /**
  * Called when the web socket receives an error. Such an error can result in the
  socket being closed.
  **/
-- (void) didReceiveError: (NSError*) aError;
+- (void) didReceiveError:(NSError*) aError;
 
 /**
  * Called when the web socket receives a message.
  **/
-- (void) didReceiveTextMessage: (NSString*) aMessage;
+- (void) didReceiveTextMessage:(NSString*) aMessage;
 
 /**
  * Called when the web socket receives a message.
  **/
-- (void) didReceiveBinaryMessage: (NSData*) aMessage;
+- (void) didReceiveBinaryMessage:(NSData*) aMessage;
 
 @optional
 /**
  * Called when pong is sent... For keep-alive optimization.
  **/
-- (void) didSendPong: (NSData*) aMessage;
+- (void) didSendPong:(NSData*) aMessage;
 
 @end
 
@@ -94,6 +112,10 @@ typedef NSUInteger WebSocketReadyState;
     NSUInteger maxPayloadSize;
     MutableQueue* pendingFragments;
     BOOL isClosing;
+    NSUInteger closeStatusCode;
+    NSString* closeMessage;
+    BOOL sendCloseInfoToListener;
+    NSTimeInterval closeTimeout;
 }
 
 
@@ -112,6 +134,12 @@ typedef NSUInteger WebSocketReadyState;
  * value of -1 will result in no timeouts being applied.
  **/
 @property(nonatomic,assign) NSTimeInterval timeout;
+
+/**
+ * Timeout used for the closing handshake. If this timeout is exceeded, the socket
+ * will be forced closed. A value of -1 will result in no timeouts being applied.
+ **/
+@property(nonatomic,assign) NSTimeInterval closeTimeout;
 
 /**
  * URL of the websocket
@@ -179,27 +207,32 @@ typedef NSUInteger WebSocketReadyState;
 /**
  * Connect the websocket and prepare it for reading and writing.
  **/
-- (void)open;
+- (void) open;
 
 /**
- * Finish all reads/writes and close the websocket.
+ * Finish all reads/writes and close the websocket. Sends a status of WebSocketCloseStatusNormal and no message.
  **/
-- (void)close;
+- (void) close;
+
+/**
+ * Finish all reads/writes and close the websocket. Sends the specified status and message.
+ **/
+- (void) close:(NSUInteger) aStatusCode message:(NSString*) aMessage;
 
 /**
  * Write a UTF-8 encoded NSString message to the websocket.
  **/
-- (void)sendText:(NSString*)message;
+- (void) sendText:(NSString*)message;
 
 /**
  * Write a binary message to the websocket.
  **/
-- (void)sendBinary:(NSData*)message;
+- (void) sendBinary:(NSData*)message;
 
 /**
  * Send ping message to the websocket
  */
-- (void)sendPing:(NSData*)message;
+- (void) sendPing:(NSData*)message;
 
 extern NSString *const WebSocket07Exception;
 extern NSString *const WebSocket07ErrorDomain;
