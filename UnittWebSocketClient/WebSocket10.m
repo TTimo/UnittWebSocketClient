@@ -238,6 +238,10 @@ WebSocketWaitingState waitingState;
                 else if (i == fragmentCount - 1)
                 {
                     fragmentLength = messageLength % self.maxPayloadSize;
+                    if (fragmentLength == 0)
+                    {
+                        fragmentLength = self.maxPayloadSize;
+                    }
                     fragment = [WebSocketFragment fragmentWithOpCode:MessageOpCodeContinuation isFinal:YES payload:[aMessage subdataWithRange:NSMakeRange(i * self.maxPayloadSize, fragmentLength)]];
                 }
                 else

@@ -67,6 +67,7 @@
     [super setUp];
     ws = [[WebSocket07 webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
     ws.closeTimeout = 15.0;
+    ws.maxPayloadSize = 90;
 }
 
 - (void)tearDown
@@ -102,12 +103,27 @@
     STAssertEqualObjects(testText, @"Hello", @"Did not find the correct message.");
 }
 
+- (NSString*) getLargeMessage
+{
+    NSMutableString* output = [NSMutableString string];
+    for (int i = 0; i < 40; i++)
+    {
+        [output appendFormat:@"%i %@ ,", i, @"blue"];
+    }
+    return output;
+}
+
 - (void) testRoundTrip
 {
     [self.ws open];
     [self waitForSeconds:10.0];
-    STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct phone.");
-    [self.ws close:WebSocketCloseStatusMessageTooLarge message:@"woah"];
+    STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct message.");
+    [self.ws sendText:[self getLargeMessage]];
+    [self waitForSeconds:10.0];
+    NSString* expected = [NSString stringWithFormat:@"Message: %@", [self getLargeMessage]];
+    STAssertEqualObjects(self.response, expected, @"Did not find the correct message.");
+    //[self.ws close:WebSocketCloseStatusMessageTooLarge message:@"woah"];
+    [self.ws close:0 message:nil];
     [self waitForSeconds:10.0];
 }
 

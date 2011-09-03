@@ -41,12 +41,8 @@
 		BDD61A8513B1A71600FF3358 /* MutableQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */; };
 		BDD936A914009FC1004C64DF /* WebSocket08.h in Headers */ = {isa = PBXBuildFile; fileRef = BDD936A714009FC1004C64DF /* WebSocket08.h */; };
 		BDD936AA14009FC1004C64DF /* WebSocket08.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936A814009FC1004C64DF /* WebSocket08.m */; };
-		BDD936AB14009FC1004C64DF /* WebSocket08.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936A814009FC1004C64DF /* WebSocket08.m */; };
-		BDD936C01400AB77004C64DF /* UnittWebSocketClient08Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936BF1400AB77004C64DF /* UnittWebSocketClient08Tests.m */; };
 		BDD936C31400AD31004C64DF /* WebSocket10.h in Headers */ = {isa = PBXBuildFile; fileRef = BDD936C11400AD31004C64DF /* WebSocket10.h */; };
 		BDD936C41400AD31004C64DF /* WebSocket10.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936C21400AD31004C64DF /* WebSocket10.m */; };
-		BDD936C51400AD31004C64DF /* WebSocket10.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936C21400AD31004C64DF /* WebSocket10.m */; };
-		BDD936C81400B654004C64DF /* UnittWebSocketClient10Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936C71400B654004C64DF /* UnittWebSocketClient10Tests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -358,10 +354,6 @@
 				BD8D92891370EFBD0018753B /* AsyncSocket.m in Sources */,
 				BD27705013A57D6A00E578FE /* WebSocketFragment.m in Sources */,
 				BD27705613A594BC00E578FE /* WebSocketMessage.m in Sources */,
-				BDD936AB14009FC1004C64DF /* WebSocket08.m in Sources */,
-				BDD936C01400AB77004C64DF /* UnittWebSocketClient08Tests.m in Sources */,
-				BDD936C51400AD31004C64DF /* WebSocket10.m in Sources */,
-				BDD936C81400B654004C64DF /* UnittWebSocketClient10Tests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -391,7 +383,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				CURRENT_PROJECT_VERSION = 2.5;
+				CURRENT_PROJECT_VERSION = 0.9.3;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
@@ -409,7 +401,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				CURRENT_PROJECT_VERSION = 2.5;
+				CURRENT_PROJECT_VERSION = 0.9.3;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
