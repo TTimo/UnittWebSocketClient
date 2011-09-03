@@ -40,6 +40,7 @@ typedef NSUInteger WebSocketWaitingState;
 - (void) dispatchBinaryMessageReceived:(NSData*) aMessage;
 - (void) continueReadingMessageStream;
 - (NSString*) buildOrigin;
+- (NSString*) buildPort;
 - (NSString*) getRequest: (NSString*) aRequestPath;
 - (NSData*) getSHA1:(NSData*) aPlainText;
 - (void) generateSecKeys;
@@ -435,6 +436,31 @@ WebSocketWaitingState waitingState;
     return hash;
 }
 
+- (NSString*) buildOrigin
+{
+    if (self.url.port && [self.url.port intValue] != 80 && [self.url.port intValue] != 443)
+    {
+        return [NSString stringWithFormat:@"%@://%@:%i%@", isSecure ? @"https" : @"http", self.url.host, [self.url.port intValue], self.url.path ? self.url.path : @""];
+    }
+    
+    return [NSString stringWithFormat:@"%@://%@%@", isSecure ? @"https" : @"http", self.url.host, self.url.path ? self.url.path : @""];
+}
+
+- (NSString*) buildHost
+{
+    if (self.url.port)
+    {
+        if ([self.url.port intValue] == 80 || [self.url.port intValue] == 443)
+        {
+            return self.url.host;
+        }
+        
+        return [NSString stringWithFormat:@"%@:%i", self.url.host, [self.url.port intValue]];
+    }
+    
+    return self.url.host;
+}
+
 - (NSString*) getRequest: (NSString*) aRequestPath
 {
     [self generateSecKeys];
@@ -463,7 +489,7 @@ WebSocketWaitingState waitingState;
                     "Sec-WebSocket-Key: %@\r\n"
                     "Sec-WebSocket-Version: 8\r\n"
                     "\r\n",
-                    aRequestPath, self.url.host, self.origin, protocolFragment, wsSecKey];
+                    aRequestPath, [self buildHost], self.origin, protocolFragment, wsSecKey];
         }
     }
     
@@ -476,7 +502,7 @@ WebSocketWaitingState waitingState;
             "Sec-WebSocket-Key: %@\r\n"
             "Sec-WebSocket-Version: 8\r\n"
             "\r\n",
-            aRequestPath, self.url.host, self.origin, wsSecKey];
+            aRequestPath, [self buildHost], self.origin, wsSecKey];
 }
 
 - (void) generateSecKeys
@@ -749,16 +775,6 @@ WebSocketWaitingState waitingState;
         isClosing = NO;
     }
     return self;
-}
-
-- (NSString*) buildOrigin
-{
-    if (self.url.port && [self.url.port intValue] != 80 && [self.url.port intValue] != 443)
-    {
-        return [NSString stringWithFormat:@"%@://%@:%i%@", isSecure ? @"https" : @"http", self.url.host, [self.url.port intValue], self.url.path ? self.url.path : @""];
-    }
-    
-    return [NSString stringWithFormat:@"%@://%@%@", isSecure ? @"https" : @"http", self.url.host, self.url.path ? self.url.path : @""];
 }
 
 -(void) dealloc 

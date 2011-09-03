@@ -28,6 +28,7 @@
 - (void) dispatchMessageReceived:(NSString*) aMessage;
 - (void) readNextMessage;
 - (NSString*) buildOrigin;
+- (NSString*) buildHost;
 - (NSString*) getRequest:(NSString*) aRequestPath;
 - (NSData*) getMD5:(NSData*) aPlainText;
 - (void) generateSecKeys;
@@ -115,6 +116,31 @@ enum
     return [NSData dataWithBytes:result length:16];
 }
 
+- (NSString*) buildOrigin
+{
+    if (self.url.port && [self.url.port intValue] != 80 && [self.url.port intValue] != 443)
+    {
+        return [NSString stringWithFormat:@"%@://%@:%i%@", isSecure ? @"https" : @"http", self.url.host, [self.url.port intValue], self.url.path ? self.url.path : @""];
+    }
+    
+    return [NSString stringWithFormat:@"%@://%@%@", isSecure ? @"https" : @"http", self.url.host, self.url.path ? self.url.path : @""];
+}
+
+- (NSString*) buildHost
+{
+    if (self.url.port)
+    {
+        if ([self.url.port intValue] == 80 || [self.url.port intValue] == 443)
+        {
+            return self.url.host;
+        }
+        
+        return [NSString stringWithFormat:@"%@:%i", self.url.host, [self.url.port intValue]];
+    }
+    
+    return self.url.host;
+}
+
 // TODO: use key1, key2, key3 handshake stuff
 - (NSString*) getRequest: (NSString*) aRequestPath
 {
@@ -142,7 +168,7 @@ enum
                     "Origin: %@\r\n"
                     "Sec-WebSocket-Protocol: %@\r\n"
                     "\r\n",
-                    aRequestPath, self.url.host, self.origin, protocolFragment];
+                    aRequestPath, [self buildHost], self.origin, protocolFragment];
         }
     }
     
@@ -153,7 +179,7 @@ enum
             "Host: %@\r\n"
             "Origin: %@\r\n"
             "\r\n",
-            aRequestPath, self.url.host, self.origin];
+            aRequestPath, [self buildHost], self.origin];
     /*
     return [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\n"
             "Upgrade: WebSocket\r\n"
@@ -486,16 +512,6 @@ int randFromRange(int min, int max)
         self.timeout = 30.0;
     }
     return self;
-}
-
-- (NSString*) buildOrigin
-{
-    if (self.url.port && [self.url.port intValue] != 80 && [self.url.port intValue] != 443)
-    {
-        return [NSString stringWithFormat:@"%@://%@:%i%@", isSecure ? @"https" : @"http", self.url.host, [self.url.port intValue], self.url.path ? self.url.path : @""];
-    }
-    
-    return [NSString stringWithFormat:@"%@://%@%@", isSecure ? @"https" : @"http", self.url.host, self.url.path ? self.url.path : @""];
 }
 
 -(void) dealloc 
