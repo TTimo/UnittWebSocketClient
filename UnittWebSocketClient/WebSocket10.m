@@ -129,7 +129,7 @@ WebSocketWaitingState waitingState;
     }
     else
     {
-        [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+        [self sendClose:WebSocketCloseStatusInvalidUtf8 message:nil];
     }
     isClosing = YES;
 }
@@ -190,7 +190,7 @@ WebSocketWaitingState waitingState;
         {
             [self sendMessage:messageData messageWithOpCode:MessageOpCodeText];
         }
-        else
+        else if (aMessage)
         {
             [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
         }
@@ -302,14 +302,17 @@ WebSocketWaitingState waitingState;
         case MessageOpCodeText:
             if (aFragment.isFinal)
             {
-                NSString* textMsg = [[[NSString alloc] initWithData:aFragment.payloadData encoding:NSUTF8StringEncoding] autorelease];
-                if (textMsg)
+                if (aFragment.payloadData.length)
                 {
-                    [self dispatchTextMessageReceived:textMsg];
-                }
-                else
-                {
-                    [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+                    NSString* textMsg = [[[NSString alloc] initWithData:aFragment.payloadData encoding:NSUTF8StringEncoding] autorelease];
+                    if (textMsg)
+                    {
+                        [self dispatchTextMessageReceived:textMsg];
+                    }
+                    else
+                    {
+                        [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+                    }
                 }
             }
             break;
