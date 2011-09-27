@@ -134,7 +134,7 @@ WebSocketWaitingState waitingState;
         }
         else
         {
-            [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+            [self sendClose:WebSocketCloseStatusInvalidUtf8 message:nil];
         }
     }
     isClosing = YES;
