@@ -1,8 +1,8 @@
 //
-//  UnittWebSocketClient10Tests.h
-//  UnittWebSocketClient
+//  UnittWebSocketClientTests.h
+//  UnittWebSocketClientTests
 //
-//  Created by Josh Morris on 6/19/11.
+//  Created by Josh Morris on 5/2/11.
 //  Copyright 2011 UnitT Software. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -19,17 +19,17 @@
 //
 
 #import <SenTestingKit/SenTestingKit.h>
-#import "WebSocket.h"
+#import "WebSocket00.h"
 
 
-@interface UnittWebSocketClientTests : SenTestCase  <WebSocketDelegate>
+@interface UnittWebSocketClient00Tests : SenTestCase <WebSocket00Delegate>
 {
 @private
-    WebSocket* ws;
+    WebSocket00* ws;
     NSString* response;
 }
 
-@property (nonatomic, readonly) WebSocket* ws;
+@property (nonatomic, readonly) WebSocket00* ws;
 @property (nonatomic, readonly) NSString* response;
 
 - (void) waitForSeconds: (NSTimeInterval) aSeconds;

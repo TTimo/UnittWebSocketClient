@@ -123,6 +123,8 @@
     NSString* expected = [NSString stringWithFormat:@"Message: %@", [self getLargeMessage]];
     STAssertEqualObjects(self.response, expected, @"Did not find the correct message.");
     //[self.ws close:WebSocketCloseStatusMessageTooLarge message:@"woah"];
+    [self.ws sendText:[self getLargeMessage]];
+    [self.ws sendText:@"BlueAgain"];
     [self.ws close:0 message:nil];
     [self waitForSeconds:10.0];
 }
