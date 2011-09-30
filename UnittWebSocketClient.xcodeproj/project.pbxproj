@@ -35,7 +35,8 @@
 		BD8D92891370EFBD0018753B /* AsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = BD0C3272136FA8C3008B53D7 /* AsyncSocket.m */; };
 		BD8D928B1370F0270018753B /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD8D928A1370F0270018753B /* CFNetwork.framework */; };
 		BD8D928D1370F0320018753B /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD8D928C1370F0310018753B /* Security.framework */; };
-		BDACFD30143224D60035C737 /* UnittWebSocketClient00Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDACFD2F143224D60035C737 /* UnittWebSocketClient00Tests.m */; };
+		BDB63DB31436671000D409AB /* WebSocket08.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936A814009FC1004C64DF /* WebSocket08.m */; };
+		BDB63DB41436671000D409AB /* WebSocket10.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936C21400AD31004C64DF /* WebSocket10.m */; };
 		BDC7F5CF13A9171400C1E994 /* WebSocket07.h in Headers */ = {isa = PBXBuildFile; fileRef = BDC7F5CD13A9171400C1E994 /* WebSocket07.h */; };
 		BDC7F5D013A9171400C1E994 /* WebSocket07.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC7F5CE13A9171400C1E994 /* WebSocket07.m */; };
 		BDC83DF3137203CE00C46E3F /* NSData+Base64.h in Headers */ = {isa = PBXBuildFile; fileRef = BDC83DF1137203CE00C46E3F /* NSData+Base64.h */; };
@@ -44,7 +45,6 @@
 		BDD027B513AAF6A80012C2B9 /* MutableQueue.h in Headers */ = {isa = PBXBuildFile; fileRef = BDD027B313AAF6A80012C2B9 /* MutableQueue.h */; };
 		BDD027B913AAF7FF0012C2B9 /* MutableQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */; };
 		BDD3FD0E13B47C3000E861E6 /* WebSocket07.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC7F5CE13A9171400C1E994 /* WebSocket07.m */; };
-		BDD3FD0F13B47C3000E861E6 /* UnittWebSocketClient07Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDF1209113AEEFE600AD997A /* UnittWebSocketClient07Tests.m */; };
 		BDD61A8513B1A71600FF3358 /* MutableQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */; };
 		BDD936A914009FC1004C64DF /* WebSocket08.h in Headers */ = {isa = PBXBuildFile; fileRef = BDD936A714009FC1004C64DF /* WebSocket08.h */; };
 		BDD936AA14009FC1004C64DF /* WebSocket08.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936A814009FC1004C64DF /* WebSocket08.m */; };
@@ -368,10 +368,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BDB63DB31436671000D409AB /* WebSocket08.m in Sources */,
+				BDB63DB41436671000D409AB /* WebSocket10.m in Sources */,
 				BD4A963513B974B600E132E9 /* WebSocket00.m in Sources */,
 				BD4A963613B974B600E132E9 /* UnittWebSocketClientTests.m in Sources */,
 				BDD3FD0E13B47C3000E861E6 /* WebSocket07.m in Sources */,
-				BDD3FD0F13B47C3000E861E6 /* UnittWebSocketClient07Tests.m in Sources */,
 				BDD61A8513B1A71600FF3358 /* MutableQueue.m in Sources */,
 				BDC83DF513720DEE00C46E3F /* NSData+Base64.m in Sources */,
 				BD8D92891370EFBD0018753B /* AsyncSocket.m in Sources */,
@@ -379,7 +380,6 @@
 				BD27705613A594BC00E578FE /* WebSocketMessage.m in Sources */,
 				BD353E861432249700B77063 /* WebSocket.m in Sources */,
 				BD353E891432249700B77063 /* WebSocketConnectConfig.m in Sources */,
-				BDACFD30143224D60035C737 /* UnittWebSocketClient00Tests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

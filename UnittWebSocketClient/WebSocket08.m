@@ -390,7 +390,7 @@ WebSocketWaitingState waitingState;
     else if (fragment)
     {
         [fragment.fragment appendData:aData];
-        if (fragment.isValid) 
+        if (fragment.canBeParsed) 
         {
             [fragment parseContent];
         }
