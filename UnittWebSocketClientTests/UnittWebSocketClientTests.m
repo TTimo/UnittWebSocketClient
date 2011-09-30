@@ -38,12 +38,12 @@
 {
     NSLog(@"Status Code: %i", aStatusCode);
     NSLog(@"Close Message: %@", aMessage);
-    NSLog(@"Error: %@", [aError localizedDescription]);
+    NSLog(@"Error: errorDesc=%@, failureReason=%@", [aError localizedDescription], [aError localizedFailureReason]);
 }
 
 - (void) didReceiveError: (NSError*) aError
 {
-    NSLog(@"Error: %@", [aError localizedDescription]);
+    NSLog(@"Error: errorDesc=%@, failureReason=%@", [aError localizedDescription], [aError localizedFailureReason]);
 }
 
 - (void) didReceiveTextMessage: (NSString*) aMessage
@@ -65,7 +65,7 @@
 - (void)setUp
 {
     [super setUp];
-    WebSocketConnectConfig* config = [WebSocketConnectConfig webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifySecurityKey:YES];
+    WebSocketConnectConfig* config = [WebSocketConnectConfig configWithURLString:@"ws://10.0.1.36:8080/testws/ws/test" origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil headers:nil verifySecurityKey:YES extensions:nil ];
     config.closeTimeout = 15.0;
     ws = [[WebSocket webSocketWithConfig:config delegate:self] retain];
 }

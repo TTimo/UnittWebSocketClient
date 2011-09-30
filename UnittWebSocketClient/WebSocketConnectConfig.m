@@ -44,6 +44,10 @@
 @synthesize verifySecurityKey;
 @synthesize serverProtocol;
 @synthesize isSecure;
+@synthesize serverHeaders;
+@synthesize headers;
+@synthesize extensions;
+@synthesize serverExtensions;
 
 
 NSString* const WebSocketConnectConfigException = @"WebSocketConnectConfigException";
@@ -51,12 +55,17 @@ NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErro
 
 
 #pragma mark Lifecycle
-+ (id) webSocketWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifySecurityKey:(BOOL) aVerifySecurityKey
++ (id) config
 {
-    return [[[[self class] alloc] initWithURLString:aUrlString origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifySecurityKey:aVerifySecurityKey] autorelease];
+    return [[[self class] alloc] init];
 }
 
-- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifySecurityKey:(BOOL) aVerifySecurityKey
++ (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions
+{
+    return [[[[self class] alloc] initWithURLString:aUrlString origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings headers:aHeaders verifySecurityKey:aVerifySecurityKey extensions:aExtensions] autorelease];
+}
+
+- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions
 {
     self = [super init];
     if (self) 
@@ -69,26 +78,34 @@ NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErro
         }
         
         //apply properties
-        url = [tempUrl retain];
-        isSecure = [self.url.scheme isEqualToString:@"wss"];
+        self.url = tempUrl;
+        self.isSecure = [self.url.scheme isEqualToString:@"wss"];
         if (aOrigin)
         {
-            origin = [aOrigin copy];
+            self.origin = aOrigin;
         }
         else
         {
-            origin = [[self buildOrigin] copy];
+            self.origin = [self buildOrigin];
         }
-        host = [[self buildHost] copy];
+        self.host = [self buildHost];
         if (aProtocols)
         {
-            protocols = [aProtocols retain];
+            self.protocols = [NSMutableArray arrayWithArray:aProtocols];
         }
         if (aTlsSettings)
         {
-            tlsSettings = [aTlsSettings retain];
+            self.tlsSettings = [NSMutableDictionary dictionaryWithDictionary:aTlsSettings];
         }
-        verifySecurityKey = aVerifySecurityKey;
+        if (aHeaders)
+        {
+            self.headers = [NSMutableDictionary dictionaryWithDictionary:aHeaders];
+        }
+        if (aExtensions)
+        {
+            self.extensions = [NSMutableArray arrayWithArray:aExtensions];
+        }
+        self.verifySecurityKey = aVerifySecurityKey;
         self.timeout = 30.0;
         self.closeTimeout = 30.0;
         self.maxPayloadSize = 32*1024;
@@ -128,7 +145,12 @@ NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErro
     [origin release];
     [host release];
     [protocols release];
+    [serverProtocol release];
     [tlsSettings release];
+    [extensions release];
+    [serverExtensions release];
+    [headers release];
+    [serverHeaders release];
     [super dealloc];
 }
 

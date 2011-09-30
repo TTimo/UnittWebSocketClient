@@ -70,6 +70,16 @@
     return NO;
 }
 
+- (BOOL) canBeParsed
+{
+    if (self.messageLength > 0)
+    {
+        return [fragment length] >= (payloadStart + payloadLength);
+    }
+    
+    return NO;
+}
+
 - (BOOL) isHeaderValid
 {
     return payloadStart;

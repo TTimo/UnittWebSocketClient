@@ -837,6 +837,8 @@ WebSocketWaitingState waitingState;
     [tlsSettings release];
     [pendingFragments release];
     [closeMessage release];
+    [wsSecKey release];
+    [wsSecKeyHandshake release];
     [super dealloc];
 }
 

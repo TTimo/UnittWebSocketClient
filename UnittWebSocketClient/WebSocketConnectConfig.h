@@ -37,15 +37,31 @@ typedef NSUInteger WebSocketVersion;
     NSString* origin;
     NSString* host;
     NSTimeInterval timeout;
-    NSDictionary* tlsSettings;
-    NSArray* protocols;
+    NSMutableDictionary* tlsSettings;
+    NSMutableArray* protocols;
     NSString* serverProtocol;
     BOOL verifySecurityKey;
     NSUInteger maxPayloadSize;
     NSTimeInterval closeTimeout;
     WebSocketVersion version;
     BOOL isSecure;
+    NSMutableDictionary* headers;
+    NSMutableDictionary* serverHeaders;
+    NSMutableArray* extensions;
+    NSMutableArray* serverExtensions;
 }
+
+/**
+ * String name/value pairs to be provided in the websocket handshake as 
+ * http headers.
+ **/
+@property(nonatomic,retain) NSMutableDictionary* headers;
+
+/**
+ * String name/value pairs provided by the server in the websocket handshake 
+ * as http headers.
+ **/
+@property(nonatomic,retain) NSMutableDictionary* serverHeaders;
 
 /**
  * Version of the websocket specification.
@@ -72,23 +88,33 @@ typedef NSUInteger WebSocketVersion;
 /**
  * URL of the websocket
  **/
-@property(nonatomic,readonly) NSURL* url;
+@property(nonatomic,retain) NSURL* url;
 
 /**
  * Indicates whether the websocket will be opened over a secure connection
  **/
-@property(nonatomic,readonly) BOOL isSecure;
+@property(nonatomic,assign) BOOL isSecure;
 
 /**
  * Origin is used more in a browser setting, but it is intended to prevent cross-site scripting. If
  * nil, the client will fill this in using the url provided by the websocket.
  **/
-@property(nonatomic,readonly) NSString* origin;
+@property(nonatomic,copy) NSString* origin;
 
 /**
  * The host string is created from the url.
  **/
-@property(nonatomic,readonly) NSString* host;
+@property(nonatomic,copy) NSString* host;
+
+/**
+ * The list of extensions accepted by the host.
+ **/
+@property(nonatomic,retain) NSMutableArray* serverExtensions;
+
+/**
+ * The list of extensions supported by the client.
+ **/
+@property(nonatomic,retain) NSMutableArray* extensions;
 
 
 /**
@@ -109,28 +135,28 @@ typedef NSUInteger WebSocketVersion;
  * 
  * If the value is nil or an empty dictionary, then the websocket cannot be secured.
  **/
-@property(nonatomic,readonly) NSDictionary* tlsSettings;
+@property(nonatomic,retain) NSMutableDictionary* tlsSettings;
 
 /**
  * The subprotocols supported by the client. Each subprotocol is represented by an NSString.
  **/
-@property(nonatomic,readonly) NSArray* protocols;
+@property(nonatomic,retain) NSMutableArray* protocols;
 
 /**
  * True if the client should verify the handshake security key sent by the server. Since many of
  * the web socket servers may not have been updated to support this, set to false to ignore
  * and simply accept the connection to the server.
  **/
-@property(nonatomic,readonly) BOOL verifySecurityKey; 
+@property(nonatomic,assign) BOOL verifySecurityKey; 
 
 /**
  * The subprotocol selected by the server, nil if none was selected
  **/
 @property(nonatomic,copy) NSString* serverProtocol;
 
-
-+ (id) webSocketWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifySecurityKey:(BOOL) aVerifySecurityKey;
-- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifySecurityKey:(BOOL) aVerifySecurityKey;
++ (id) config;
++ (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
+- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
 
 extern NSString *const WebSocketConnectConfigException;
 extern NSString *const WebSocketConnectConfigErrorDomain;
