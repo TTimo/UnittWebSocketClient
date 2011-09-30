@@ -180,17 +180,19 @@ enum
             "Origin: %@\r\n"
             "\r\n",
             aRequestPath, [self buildHost], self.origin];
+    
     /*
     return [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\n"
             "Upgrade: WebSocket\r\n"
             "Connection: Upgrade\r\n"
             "Host: %@\r\n"
-            "Origin: %@\r\n"
+            "Sec-WebSocket-Origin: %@\r\n"
             "Sec-WebSocket-Key1: %@\r\n"
             "Sec-WebSocket-Key2: %@\r\n"
             "Sec-WebSocket-Version: 0\r\n"
-            "\r\n@",
-            aRequestPath, self.url.host, self.origin, key1, key2, [[NSString alloc] initWithData:[NSData dataWithBytes:&key3 length:8] encoding:NSASCIIStringEncoding]];
+            "\r\n%@"
+            "\r\n\r\n",
+            aRequestPath, self.url.host, self.origin, key1, key2, [[[NSString alloc] initWithData:key3 encoding:NSASCIIStringEncoding] autorelease]];
      */
 }
 
@@ -201,12 +203,13 @@ int randFromRange(int min, int max)
 
 - (NSData*) createRandomBytes
 {
-    unsigned char bytes[8];
+    NSMutableData* result = [NSMutableData data];
     for (int i = 0; i < 8; i++) 
     {
-        bytes[i] = randFromRange(0, 255) & 0xFF;
+        unichar byte = randFromRange(48,122);
+        [result appendBytes:&byte length:1];
     }
-    return [NSData dataWithBytes:bytes length:8]; 
+    return result;
 }
 
 - (NSString*) insertRandomCharacters: (NSString*) aString
@@ -261,10 +264,10 @@ int randFromRange(int min, int max)
     key1 = [self insertRandomCharacters:key1];
     key2 = [self insertRandomCharacters:key2];
     
-    key1 = [self insertSpaces:spaces1 string:key1];
-    key2 = [self insertSpaces:spaces2 string:key2];
+    key1 = [[self insertSpaces:spaces1 string:key1] copy];
+    key2 = [[self insertSpaces:spaces2 string:key2] copy];
     
-    key3 = [self createRandomBytes];
+    key3 = [[self createRandomBytes] retain];
     
     NSMutableData* challenge = [NSMutableData data];
     int key1int = [key1 intValue];
@@ -278,7 +281,7 @@ int randFromRange(int min, int max)
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
 {
-    //NSLog(@"Handshake Response:\n%@", aResponse);
+    NSLog(@"Handshake Response:\n%@", aResponse);
     //a HTTP 101 response is the only valid one
     if ([aResponse hasPrefix:@"HTTP/1.1 101"])
     {        
@@ -420,7 +423,7 @@ int randFromRange(int min, int max)
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }
     NSString* getRequest = [self getRequest: requestPath];
-    //NSLog(@"Handshake Request: %@", getRequest);
+    NSLog(@"Handshake Request: %@", getRequest);
     [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
 }
 
@@ -525,6 +528,9 @@ int randFromRange(int min, int max)
     [closingError release];
     [protocols release];
     [tlsSettings release];
+    [key1 release];
+    [key2 release];
+    [key3 release];
     [super dealloc];
 }
 

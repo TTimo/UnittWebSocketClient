@@ -56,7 +56,7 @@
 {
     [super setUp];
     
-    ws = [[WebSocket00 webSocketWithURLString:@"ws://10.0.1.5:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
+    ws = [[WebSocket00 webSocketWithURLString:@"ws://localhost:8080/testws/ws/test" delegate:self origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil verifyHandshake:YES] retain];
 }
 
 - (void)tearDown
