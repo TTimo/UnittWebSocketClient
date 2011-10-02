@@ -180,20 +180,6 @@ enum
             "Origin: %@\r\n"
             "\r\n",
             aRequestPath, [self buildHost], self.origin];
-    
-    /*
-    return [NSString stringWithFormat:@"GET %@ HTTP/1.1\r\n"
-            "Upgrade: WebSocket\r\n"
-            "Connection: Upgrade\r\n"
-            "Host: %@\r\n"
-            "Sec-WebSocket-Origin: %@\r\n"
-            "Sec-WebSocket-Key1: %@\r\n"
-            "Sec-WebSocket-Key2: %@\r\n"
-            "Sec-WebSocket-Version: 0\r\n"
-            "\r\n%@"
-            "\r\n\r\n",
-            aRequestPath, self.url.host, self.origin, key1, key2, [[[NSString alloc] initWithData:key3 encoding:NSASCIIStringEncoding] autorelease]];
-     */
 }
 
 int randFromRange(int min, int max)
