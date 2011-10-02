@@ -65,7 +65,7 @@
 - (void)setUp
 {
     [super setUp];
-    WebSocketConnectConfig* config = [WebSocketConnectConfig configWithURLString:@"ws://10.0.1.36:8080/testws/ws/test" origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil headers:nil verifySecurityKey:YES extensions:nil ];
+    WebSocketConnectConfig* config = [WebSocketConnectConfig configWithURLString:@"ws://localhost:8080/testws/ws/test" origin:nil protocols:[NSArray arrayWithObject:@"blue"] tlsSettings:nil headers:nil verifySecurityKey:YES extensions:nil ];
     config.closeTimeout = 15.0;
     ws = [[WebSocket webSocketWithConfig:config delegate:self] retain];
 }

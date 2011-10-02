@@ -60,6 +60,7 @@ enum
 typedef NSUInteger WebSocketReadyState;
 
 
+__attribute__((deprecated))
 @protocol WebSocket08Delegate <NSObject>
 
 /**
@@ -97,6 +98,7 @@ typedef NSUInteger WebSocketReadyState;
 @end
 
 
+__attribute__((deprecated))
 @interface WebSocket08 : NSObject 
 {
 @private

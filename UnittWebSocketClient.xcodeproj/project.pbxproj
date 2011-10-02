@@ -36,7 +36,8 @@
 		BD8D928D1370F0320018753B /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD8D928C1370F0310018753B /* Security.framework */; };
 		BDB63DB31436671000D409AB /* WebSocket08.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936A814009FC1004C64DF /* WebSocket08.m */; };
 		BDB63DB41436671000D409AB /* WebSocket10.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936C21400AD31004C64DF /* WebSocket10.m */; };
-		BDB63DB61436864300D409AB /* UnittWebSocketClientTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BD0C3267136FA7CB008B53D7 /* UnittWebSocketClientTests.m */; };
+		BDBB5A181438F53300B651B8 /* UnittWebSocketClient00Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDACFD2F143224D60035C737 /* UnittWebSocketClient00Tests.m */; };
+		BDBB5A191439078900B651B8 /* UnittWebSocketClientTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BD0C3267136FA7CB008B53D7 /* UnittWebSocketClientTests.m */; };
 		BDC7F5CF13A9171400C1E994 /* WebSocket07.h in Headers */ = {isa = PBXBuildFile; fileRef = BDC7F5CD13A9171400C1E994 /* WebSocket07.h */; };
 		BDC7F5D013A9171400C1E994 /* WebSocket07.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC7F5CE13A9171400C1E994 /* WebSocket07.m */; };
 		BDC83DF3137203CE00C46E3F /* NSData+Base64.h in Headers */ = {isa = PBXBuildFile; fileRef = BDC83DF1137203CE00C46E3F /* NSData+Base64.h */; };
@@ -368,7 +369,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BDB63DB61436864300D409AB /* UnittWebSocketClientTests.m in Sources */,
+				BDBB5A191439078900B651B8 /* UnittWebSocketClientTests.m in Sources */,
+				BDBB5A181438F53300B651B8 /* UnittWebSocketClient00Tests.m in Sources */,
 				BDB63DB31436671000D409AB /* WebSocket08.m in Sources */,
 				BDB63DB41436671000D409AB /* WebSocket10.m in Sources */,
 				BD4A963513B974B600E132E9 /* WebSocket00.m in Sources */,

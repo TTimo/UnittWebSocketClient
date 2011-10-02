@@ -281,7 +281,6 @@ int randFromRange(int min, int max)
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
 {
-    NSLog(@"Handshake Response:\n%@", aResponse);
     //a HTTP 101 response is the only valid one
     if ([aResponse hasPrefix:@"HTTP/1.1 101"])
     {        
@@ -423,7 +422,6 @@ int randFromRange(int min, int max)
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }
     NSString* getRequest = [self getRequest: requestPath];
-    NSLog(@"Handshake Request: %@", getRequest);
     [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.timeout tag:TagHandshake];
 }
 
