@@ -38,6 +38,9 @@
 		BDB63DB41436671000D409AB /* WebSocket10.m in Sources */ = {isa = PBXBuildFile; fileRef = BDD936C21400AD31004C64DF /* WebSocket10.m */; };
 		BDBB5A181438F53300B651B8 /* UnittWebSocketClient00Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = BDACFD2F143224D60035C737 /* UnittWebSocketClient00Tests.m */; };
 		BDBB5A191439078900B651B8 /* UnittWebSocketClientTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BD0C3267136FA7CB008B53D7 /* UnittWebSocketClientTests.m */; };
+		BDBB5A1C14391F7800B651B8 /* HandshakeHeader.h in Headers */ = {isa = PBXBuildFile; fileRef = BDBB5A1A14391F7800B651B8 /* HandshakeHeader.h */; };
+		BDBB5A1D14391F7800B651B8 /* HandshakeHeader.m in Sources */ = {isa = PBXBuildFile; fileRef = BDBB5A1B14391F7800B651B8 /* HandshakeHeader.m */; };
+		BDBB5A1E14391F7800B651B8 /* HandshakeHeader.m in Sources */ = {isa = PBXBuildFile; fileRef = BDBB5A1B14391F7800B651B8 /* HandshakeHeader.m */; };
 		BDC7F5CF13A9171400C1E994 /* WebSocket07.h in Headers */ = {isa = PBXBuildFile; fileRef = BDC7F5CD13A9171400C1E994 /* WebSocket07.h */; };
 		BDC7F5D013A9171400C1E994 /* WebSocket07.m in Sources */ = {isa = PBXBuildFile; fileRef = BDC7F5CE13A9171400C1E994 /* WebSocket07.m */; };
 		BDC83DF3137203CE00C46E3F /* NSData+Base64.h in Headers */ = {isa = PBXBuildFile; fileRef = BDC83DF1137203CE00C46E3F /* NSData+Base64.h */; };
@@ -93,6 +96,8 @@
 		BD8D928C1370F0310018753B /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		BDACFD2E143224D60035C737 /* UnittWebSocketClient00Tests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UnittWebSocketClient00Tests.h; sourceTree = "<group>"; };
 		BDACFD2F143224D60035C737 /* UnittWebSocketClient00Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UnittWebSocketClient00Tests.m; sourceTree = "<group>"; };
+		BDBB5A1A14391F7800B651B8 /* HandshakeHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HandshakeHeader.h; sourceTree = "<group>"; };
+		BDBB5A1B14391F7800B651B8 /* HandshakeHeader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HandshakeHeader.m; sourceTree = "<group>"; };
 		BDC7F5CD13A9171400C1E994 /* WebSocket07.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebSocket07.h; sourceTree = "<group>"; };
 		BDC7F5CE13A9171400C1E994 /* WebSocket07.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebSocket07.m; sourceTree = "<group>"; };
 		BDC83DF1137203CE00C46E3F /* NSData+Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+Base64.h"; sourceTree = "<group>"; };
@@ -170,6 +175,7 @@
 		BD0C324D136FA7CB008B53D7 /* UnittWebSocketClient */ = {
 			isa = PBXGroup;
 			children = (
+				BD0C324E136FA7CB008B53D7 /* Supporting Files */,
 				BDD027B313AAF6A80012C2B9 /* MutableQueue.h */,
 				BDD027B813AAF7FF0012C2B9 /* MutableQueue.m */,
 				BDC83DF1137203CE00C46E3F /* NSData+Base64.h */,
@@ -192,7 +198,8 @@
 				BD353E811432249700B77063 /* WebSocket.m */,
 				BD353E821432249700B77063 /* WebSocketConnectConfig.h */,
 				BD353E831432249700B77063 /* WebSocketConnectConfig.m */,
-				BD0C324E136FA7CB008B53D7 /* Supporting Files */,
+				BDBB5A1A14391F7800B651B8 /* HandshakeHeader.h */,
+				BDBB5A1B14391F7800B651B8 /* HandshakeHeader.m */,
 			);
 			path = UnittWebSocketClient;
 			sourceTree = "<group>";
@@ -253,6 +260,7 @@
 				BDD936C31400AD31004C64DF /* WebSocket10.h in Headers */,
 				BD353E841432249700B77063 /* WebSocket.h in Headers */,
 				BD353E871432249700B77063 /* WebSocketConnectConfig.h in Headers */,
+				BDBB5A1C14391F7800B651B8 /* HandshakeHeader.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -362,6 +370,7 @@
 				BDD936C41400AD31004C64DF /* WebSocket10.m in Sources */,
 				BD353E851432249700B77063 /* WebSocket.m in Sources */,
 				BD353E881432249700B77063 /* WebSocketConnectConfig.m in Sources */,
+				BDBB5A1D14391F7800B651B8 /* HandshakeHeader.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -382,6 +391,7 @@
 				BD27705613A594BC00E578FE /* WebSocketMessage.m in Sources */,
 				BD353E861432249700B77063 /* WebSocket.m in Sources */,
 				BD353E891432249700B77063 /* WebSocketConnectConfig.m in Sources */,
+				BDBB5A1E14391F7800B651B8 /* HandshakeHeader.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -411,7 +421,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				CURRENT_PROJECT_VERSION = 0.9.3.1;
+				CURRENT_PROJECT_VERSION = 0.9.4;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
@@ -429,7 +439,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				CURRENT_PROJECT_VERSION = 0.9.3.1;
+				CURRENT_PROJECT_VERSION = 0.9.4;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;

@@ -45,8 +45,8 @@ typedef NSUInteger WebSocketVersion;
     NSTimeInterval closeTimeout;
     WebSocketVersion version;
     BOOL isSecure;
-    NSMutableDictionary* headers;
-    NSMutableDictionary* serverHeaders;
+    NSMutableArray* headers;
+    NSMutableArray* serverHeaders;
     NSMutableArray* extensions;
     NSMutableArray* serverExtensions;
 }
@@ -55,13 +55,13 @@ typedef NSUInteger WebSocketVersion;
  * String name/value pairs to be provided in the websocket handshake as 
  * http headers.
  **/
-@property(nonatomic,retain) NSMutableDictionary* headers;
+@property(nonatomic,retain) NSMutableArray* headers;
 
 /**
  * String name/value pairs provided by the server in the websocket handshake 
  * as http headers.
  **/
-@property(nonatomic,retain) NSMutableDictionary* serverHeaders;
+@property(nonatomic,retain) NSMutableArray* serverHeaders;
 
 /**
  * Version of the websocket specification.
@@ -155,8 +155,8 @@ typedef NSUInteger WebSocketVersion;
 @property(nonatomic,copy) NSString* serverProtocol;
 
 + (id) config;
-+ (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
-- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
++ (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSArray*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
+- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSArray*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
 
 extern NSString *const WebSocketConnectConfigException;
 extern NSString *const WebSocketConnectConfigErrorDomain;

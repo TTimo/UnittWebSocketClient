@@ -20,6 +20,7 @@
 
 #import "WebSocket.h"
 #import "WebSocketFragment.h"
+#import "HandshakeHeader.h"
 
 
 enum 
@@ -45,7 +46,7 @@ typedef NSUInteger WebSocketWaitingState;
 - (NSData*) getSHA1:(NSData*) aPlainText;
 - (void) generateSecKeys;
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
-- (NSMutableArray*) getServerExtensions:(NSDictionary*) aServerHeaders;
+- (NSMutableArray*) getServerExtensions:(NSMutableArray*) aServerHeaders;
 - (void) sendClose:(NSUInteger) aStatusCode message:(NSString*) aMessage;
 - (void) sendMessage:(NSData*) aMessage messageWithOpCode:(MessageOpCode) aOpCode;
 - (void) sendMessage:(WebSocketFragment*) aFragment;
@@ -57,8 +58,9 @@ typedef NSUInteger WebSocketWaitingState;
 - (void) closeSocket;
 - (void) scheduleForceCloseCheck:(NSTimeInterval) aInterval;
 - (void) checkClose:(NSTimer*) aTimer;
-- (NSString*) buildStringFromHeaders:(NSDictionary*) aHeaders resource:(NSString*) aResource;
-- (NSMutableDictionary*) buildHeadersFromString:(NSString*) aHeaders;
+- (NSString*) buildStringFromHeaders:(NSMutableArray*) aHeaders resource:(NSString*) aResource;
+- (NSMutableArray*) buildHeadersFromString:(NSString*) aHeaders;
+- (HandshakeHeader*) headerForKey:(NSString*) aKey inHeaders:(NSMutableArray*) aHeaders;
 @end
 
 
@@ -500,25 +502,25 @@ WebSocketWaitingState waitingState;
 - (NSString*) getRequest: (NSString*) aRequestPath
 {
     //create headers if they are missing
-    NSMutableDictionary* headers = self.config.headers;
+    NSMutableArray* headers = self.config.headers;
     if (headers == nil)
     {
-        headers = [NSMutableDictionary dictionary];
+        headers = [NSMutableArray array];
         self.config.headers = headers;
     }
     
     //handle security keys
     [self generateSecKeys];
-    [headers setObject:wsSecKey forKey:@"Sec-WebSocket-Key"];
+    [headers addObject:[HandshakeHeader headerWithValue:wsSecKey forKey:@"Sec-WebSocket-Key"]];
     
     //handle host
-    [headers setObject:self.config.host forKey:@"Host"];
+    [headers addObject:[HandshakeHeader headerWithValue:self.config.host forKey:@"Host"]];
     
     //handle origin
-    [headers setObject:self.config.host forKey:@"Sec-WebSocket-Origin"];
+    [headers addObject:[HandshakeHeader headerWithValue:self.config.origin forKey:@"Sec-WebSocket-Origin"]];
     
     //handle version
-    [headers setObject:[NSString stringWithFormat:@"%i",self.config.version] forKey:@"Sec-WebSocket-Version"];
+    [headers addObject:[HandshakeHeader headerWithValue:[NSString stringWithFormat:@"%i",self.config.version] forKey:@"Sec-WebSocket-Version"]];
     
     //handle protocol
     if (self.config.protocols && self.config.protocols.count > 0)
@@ -537,7 +539,7 @@ WebSocketWaitingState waitingState;
         //include protocols, if any
         if ([protocolFragment length] > 0)
         {
-            [headers setObject:protocolFragment forKey:@"Sec-WebSocket-Protocol"];
+            [headers addObject:[HandshakeHeader headerWithValue:protocolFragment forKey:@"Sec-WebSocket-Protocol"]];
         }
     }
     
@@ -558,14 +560,14 @@ WebSocketWaitingState waitingState;
         //return request with extensions
         if ([extensionFragment length] > 0)
         {
-            [headers setObject:extensionFragment forKey:@"Sec-WebSocket-Extensions"];
+            [headers addObject:[HandshakeHeader headerWithValue:extensionFragment forKey:@"Sec-WebSocket-Extensions"]];
         }
     }
     
     return [self buildStringFromHeaders:headers resource:aRequestPath];
 }
                     
-- (NSString*) buildStringFromHeaders:(NSDictionary*) aHeaders resource:(NSString*) aResource
+- (NSString*) buildStringFromHeaders:(NSMutableArray*) aHeaders resource:(NSString*) aResource
 {
     //init
     NSMutableString* result = [NSMutableString stringWithFormat:@"GET %@ HTTP/1.1\r\nUpgrade: WebSocket\r\nConnection: Upgrade\r\n", aResource];
@@ -573,15 +575,11 @@ WebSocketWaitingState waitingState;
     //add headers
     if (aHeaders)
     {
-        for (NSString* key in aHeaders) 
+        for (HandshakeHeader* header in aHeaders) 
         {
-            if (key)
+            if (header)
             {
-                NSString* value = [aHeaders objectForKey:key];
-                if (value)
-                {
-                    [result appendFormat:@"%@: %@\r\n", key, value];
-                }
+                [result appendFormat:@"%@: %@\r\n", header.key, header.value];
             }
         }
     }
@@ -592,9 +590,9 @@ WebSocketWaitingState waitingState;
     return result;
 }
 
-- (NSMutableDictionary*) buildHeadersFromString:(NSString*) aHeaders
+- (NSMutableArray*) buildHeadersFromString:(NSString*) aHeaders
 {
-    NSMutableDictionary* results = [NSMutableDictionary dictionary];
+    NSMutableArray* results = [NSMutableArray array];
     NSArray *listItems = [aHeaders componentsSeparatedByString:@"\r\n"];
     for (NSString* item in listItems) 
     {
@@ -605,7 +603,7 @@ WebSocketWaitingState waitingState;
             key = [key stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceCharacterSet]];
             NSString* value = [item substringFromIndex:range.length + range.location];
             value = [value stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceCharacterSet]];
-            [results setObject:value forKey:key];
+            [results addObject:[HandshakeHeader headerWithValue:value forKey:key]];
         }
     }
     return results;
@@ -623,6 +621,22 @@ WebSocketWaitingState waitingState;
     wsSecKeyHandshake = [key copy];
 }
 
+- (HandshakeHeader*) headerForKey:(NSString*) aKey inHeaders:(NSMutableArray*) aHeaders
+{
+    for (HandshakeHeader* header in aHeaders)
+    {
+        if (header)
+        {
+            if ([header keyMatchesCaseInsensitiveString:aKey])
+            {
+                return header;
+            }
+        }
+    }
+    
+    return nil;
+}
+
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
 {
     //a HTTP 101 response is the only valid one
@@ -634,23 +648,23 @@ WebSocketWaitingState waitingState;
         //check security key, if requested
         if (self.config.verifySecurityKey)
         {
-            NSString* serverKey = [self.config.serverHeaders objectForKey:@"Sec-WebSocket-Accept"];
-            if (![wsSecKeyHandshake isEqualToString:serverKey])
+            HandshakeHeader* header = [self headerForKey:@"Sec-WebSocket-Accept" inHeaders:self.config.serverHeaders];
+            if (![wsSecKeyHandshake isEqualToString:header.value])
             {
                 return false;
             }
         }
         
         //verify we have a "Upgrade: websocket" header
-        NSString* header = [self.config.serverHeaders objectForKey:@"Upgrade"];
-        if ([header caseInsensitiveCompare:@"websocket"] != NSOrderedSame)
+        HandshakeHeader* header = [self headerForKey:@"Upgrade" inHeaders:self.config.serverHeaders];
+        if ([@"websocket" caseInsensitiveCompare:header.value] != NSOrderedSame)
         {
             return false;
         }
         
         //verify we have a "Connection: Upgrade" header
-        header = [self.config.serverHeaders objectForKey:@"Connection"];
-        if ([header caseInsensitiveCompare:@"Upgrade"] != NSOrderedSame)
+        header = [self headerForKey:@"Connection" inHeaders:self.config.serverHeaders];
+        if ([@"Upgrade" caseInsensitiveCompare:header.value] != NSOrderedSame)
         {
             return false;
         }
@@ -661,21 +675,25 @@ WebSocketWaitingState waitingState;
     return false;
 }
 
-- (NSMutableArray*) getServerExtensions:(NSDictionary*) aServerHeaders
+- (NSMutableArray*) getServerExtensions:(NSMutableArray*) aServerHeaders
 {
     NSMutableArray* results = [NSMutableArray array];
     
     //loop through values trimming and adding to extensions 
-    NSString* extensionValues = [aServerHeaders objectForKey:@"sde"];
-    NSArray *listItems = [extensionValues componentsSeparatedByString:@","];
-    for (NSString* item in listItems) 
+    HandshakeHeader* header = [self headerForKey:@"Sec-WebSocket-Extensions" inHeaders:self.config.serverHeaders];
+    if (header)
     {
-        if (item)
+        NSString* extensionValues = header.value;
+        NSArray *listItems = [extensionValues componentsSeparatedByString:@","];
+        for (NSString* item in listItems) 
         {
-            NSString* value = [item stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceCharacterSet]];
-            if (value && value.length)
+            if (item)
             {
-                [results addObject:value];
+                NSString* value = [item stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceCharacterSet]];
+                if (value && value.length)
+                {
+                    [results addObject:value];
+                }
             }
         }
     }
@@ -804,10 +822,10 @@ WebSocketWaitingState waitingState;
         if ([self isUpgradeResponse: response]) 
         {
             //grab protocol from server
-            NSString* protocol = [self.config.serverHeaders objectForKey:@"Sec-WebSocket-Protocol"];
-            if (protocol)
+            HandshakeHeader* header = [self headerForKey:@"Sec-WebSocket-Protocol" inHeaders:self.config.serverHeaders];
+            if (header)
             {
-                self.config.serverProtocol = protocol;
+                self.config.serverProtocol = header.value;
             }
             
             //grab extensions from the server

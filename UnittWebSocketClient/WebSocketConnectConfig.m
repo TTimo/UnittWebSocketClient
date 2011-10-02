@@ -57,15 +57,15 @@ NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErro
 #pragma mark Lifecycle
 + (id) config
 {
-    return [[[self class] alloc] init];
+    return [[[[self class] alloc] init] autorelease];
 }
 
-+ (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions
++ (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSArray*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions
 {
     return [[[[self class] alloc] initWithURLString:aUrlString origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings headers:aHeaders verifySecurityKey:aVerifySecurityKey extensions:aExtensions] autorelease];
 }
 
-- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSDictionary*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions
+- (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSArray*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions
 {
     self = [super init];
     if (self) 
@@ -99,7 +99,7 @@ NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErro
         }
         if (aHeaders)
         {
-            self.headers = [NSMutableDictionary dictionaryWithDictionary:aHeaders];
+            self.headers = [NSMutableArray arrayWithArray:aHeaders];
         }
         if (aExtensions)
         {
