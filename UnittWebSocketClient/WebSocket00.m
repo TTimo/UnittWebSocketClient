@@ -58,6 +58,7 @@ enum
 @synthesize protocols;
 @synthesize verifyHandshake;
 @synthesize serverProtocol;
+@synthesize useKeys;
 
 
 #pragma mark Public Interface
@@ -461,7 +462,12 @@ int randFromRange(int min, int max)
     return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake] autorelease];
 }
 
-// TODO: add verify handshake info 
++ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake useKeys:(BOOL) aUseKeys
+{
+    return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake useKeys:aUseKeys] autorelease];
+}
+
+
 - (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     self = [super init];
@@ -495,6 +501,47 @@ int randFromRange(int min, int max)
             tlsSettings = [aTlsSettings retain];
         }
         verifyHandshake = NO;
+        useKeys = false;
+        socket = [[AsyncSocket alloc] initWithDelegate:self];
+        self.timeout = 30.0;
+    }
+    return self;
+}
+
+- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake useKeys:(BOOL) aUseKeys
+{
+    self = [super init];
+    if (self) 
+    {
+        //validate
+        NSURL* tempUrl = [NSURL URLWithString:aUrlString];
+        if (![tempUrl.scheme isEqualToString:@"ws"] && ![tempUrl.scheme isEqualToString:@"wss"]) 
+        {
+            [NSException raise:WebSocket00Exception format:@"Unsupported protocol %@",tempUrl.scheme];
+        }
+        
+        //apply properties
+        url = [tempUrl retain];
+        self.delegate = aDelegate;
+        isSecure = [self.url.scheme isEqualToString:@"wss"];
+        if (aOrigin)
+        {
+            origin = [aOrigin copy];
+        }
+        else
+        {
+            origin = [[self buildOrigin] copy];
+        }
+        if (aProtocols)
+        {
+            protocols = [aProtocols retain];
+        }
+        if (aTlsSettings)
+        {
+            tlsSettings = [aTlsSettings retain];
+        }
+        verifyHandshake = NO;
+        useKeys = aUseKeys;
         socket = [[AsyncSocket alloc] initWithDelegate:self];
         self.timeout = 30.0;
     }

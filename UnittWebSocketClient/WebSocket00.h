@@ -83,6 +83,7 @@ __attribute__((deprecated))
     NSData* key3;
     NSData* serverHandshake;
     BOOL verifyHandshake;
+    BOOL useKeys;
 }
 
 
@@ -101,6 +102,11 @@ __attribute__((deprecated))
  * URL of the websocket
  **/
 @property(nonatomic,readonly) NSURL* url;
+
+/**
+ * True if you want to send the hixie76 keys. Default is false.
+ **/
+@property(nonatomic,readonly) BOOL useKeys;
 
 /**
  * Origin is used more in a browser setting, but it is intended to prevent cross-site scripting. If
@@ -157,7 +163,9 @@ __attribute__((deprecated))
 
 
 + (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
++ (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake useKeys:(BOOL) aUseKeys;
 - (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake;
+- (id) initWithURLString:(NSString *) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake useKeys:(BOOL) aUseKeys;
 
 
 /**
