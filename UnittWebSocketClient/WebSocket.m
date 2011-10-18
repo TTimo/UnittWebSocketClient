@@ -169,9 +169,9 @@ WebSocketWaitingState waitingState;
     {
         closeStatusCode = aStatusCode;
         payload = [NSMutableData data];
-        unsigned char current = (unsigned char)(aStatusCode%0x100);
+        unsigned char current = (unsigned char)(aStatusCode/0x100);
         [payload appendBytes:&current length:1];
-        current = (unsigned char)(aStatusCode/0x100);
+        current = (unsigned char)(aStatusCode%0x100);
         [payload appendBytes:&current length:1];
         if (aMessage)
         {
