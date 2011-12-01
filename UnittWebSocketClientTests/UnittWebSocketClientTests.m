@@ -215,6 +215,7 @@
 
 - (void)dealloc {
     [response release];
+    [ws release];
     [super dealloc];
 }
 

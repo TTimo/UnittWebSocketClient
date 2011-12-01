@@ -601,7 +601,6 @@ WebSocketWaitingState waitingState;
     if (delegate)
     {
         [delegate didClose:aStatusCode message:aMessage error:aError];
-        [aError release];
     }
 }
 

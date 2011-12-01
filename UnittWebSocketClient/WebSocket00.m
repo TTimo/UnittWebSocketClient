@@ -344,7 +344,6 @@ int randFromRange(int min, int max)
     if (delegate)
     {
         [delegate didClose: aError];
-        [aError release];
     }
 }
 
