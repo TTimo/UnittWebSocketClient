@@ -79,4 +79,9 @@
     STAssertEqualObjects(self.response, @"Blue", @"Did not find the correct message value.");
 }
 
+- (void)dealloc {
+    [response release];
+    [super dealloc];
+}
+
 @end

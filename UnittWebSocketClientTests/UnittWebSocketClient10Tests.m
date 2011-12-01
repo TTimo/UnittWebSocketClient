@@ -187,4 +187,9 @@
     STAssertFalse(fragment.hasMask, @"Did not find the correct has mask value.");
 }
 
+- (void)dealloc {
+    [response release];
+    [super dealloc];
+}
+
 @end

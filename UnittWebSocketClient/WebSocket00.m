@@ -562,6 +562,8 @@ int randFromRange(int min, int max)
     [key1 release];
     [key2 release];
     [key3 release];
+    [serverHandshake release];
+    [serverProtocol release];
     [super dealloc];
 }
 

@@ -86,7 +86,7 @@
 - (void) testMasking
 {
     //test two way
-    WebSocketFragment* fragment = [[WebSocketFragment alloc] init];
+    WebSocketFragment* fragment = [[[WebSocketFragment alloc] init] autorelease];
     fragment.mask = [fragment generateMask];
     NSString* text = @"Hello";
     NSData* masked = [fragment mask:fragment.mask data:[text dataUsingEncoding:NSUTF8StringEncoding]];
@@ -103,14 +103,39 @@
     STAssertEqualObjects(testText, @"Hello", @"Did not find the correct message.");
 }
 
+- (NSString*) getLargeMessage
+{
+    NSMutableString* output = [NSMutableString string];
+    for (int i = 0; i < 40; i++)
+    {
+        [output appendFormat:@"%i %@ ,", i, @"blue"];
+    }
+    return output;
+}
+
 - (void) testRoundTrip
 {
     [self.ws open];
     [self waitForSeconds:10.0];
-    STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct phone.");
-    [self.ws close:WebSocketCloseStatusMessageTooLarge message:@"woah"];
+    STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct message.");
+    [self.ws sendText:[self getLargeMessage]];
+    [self waitForSeconds:10.0];
+    NSString* expected = [NSString stringWithFormat:@"Message: %@", [self getLargeMessage]];
+    STAssertEqualObjects(self.response, expected, @"Did not find the correct message.");
+    //[self.ws close:WebSocketCloseStatusMessageTooLarge message:@"woah"];
+    [self.ws sendText:[self getLargeMessage]];
+    [self.ws sendText:@"BlueAgain"];
+    [self.ws close:0 message:nil];
     [self waitForSeconds:10.0];
 }
+//- (void) testRoundTrip
+//{
+//    [self.ws open];
+//    [self waitForSeconds:10.0];
+//    STAssertEqualObjects(self.response, @"Message: Blue", @"Did not find the correct phone.");
+//    [self.ws close:WebSocketCloseStatusMessageTooLarge message:@"woah"];
+//    [self waitForSeconds:10.0];
+//}
 
 - (void) testUnmaskedText
 {
@@ -186,6 +211,11 @@
     STAssertTrue(fragment.isFinal, @"Did not set final bit.");
     STAssertEquals(fragment.payloadType, PayloadTypeBinary, @"Did not find the correct payloadtype.");
     STAssertFalse(fragment.hasMask, @"Did not find the correct has mask value.");
+}
+
+- (void)dealloc {
+    [response release];
+    [super dealloc];
 }
 
 @end

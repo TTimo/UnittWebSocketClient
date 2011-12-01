@@ -450,27 +450,30 @@ WebSocketWaitingState waitingState;
         fragment = [WebSocketFragment fragmentWithData:aData];
         [pendingFragments enqueue:fragment];
     }
-    else if (fragment)
+
+    //if we have a fragment, let's see if we can parse it and continue
+    if (fragment)
     {
+        //append the data
         [fragment.fragment appendData:aData];
+
+        //parse the data, if possible
         if (fragment.canBeParsed) 
         {
             [fragment parseContent];
+
+            //if we have a complete fragment, handle it
+            if (fragment.isValid)
+            {
+                [self handleCompleteFragment:fragment];
+            }
         }
     }
-    
-    
-    //if we have a complete fragment, handle it
-    if (fragment.isValid) 
+
+    //if we have extra data, handle it
+    if (fragment.messageLength && [aData length] > fragment.messageLength)
     {
-        //handle complete fragment
-        [self handleCompleteFragment:fragment];
-        
-        //if we have extra data, handle it
-        if ([aData length] > fragment.messageLength)
-        {
-            [self handleMessageData:[aData subdataWithRange:NSMakeRange(fragment.messageLength, [aData length] - fragment.messageLength)]];
-        }
+        [self handleMessageData:[aData subdataWithRange:NSMakeRange(fragment.messageLength, [aData length] - fragment.messageLength)]];
     }
 }
 
@@ -888,6 +891,7 @@ WebSocketWaitingState waitingState;
     [closeMessage release];
     [wsSecKey release];
     [wsSecKeyHandshake release];
+    [config release];
     [super dealloc];
 }
 
