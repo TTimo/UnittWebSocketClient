@@ -345,6 +345,9 @@
 /* Begin PBXProject section */
 		BD0C323F136FA7CB008B53D7 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
 			buildConfigurationList = BD0C3242136FA7CB008B53D7 /* Build configuration list for PBXProject "UnittWebSocketClient" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
@@ -495,6 +498,7 @@
 				DSTROOT = /tmp/UnittWebSocketClient.dst;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "UnittWebSocketClient/UnittWebSocketClient-Prefix.pch";
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -508,6 +512,7 @@
 				DSTROOT = /tmp/UnittWebSocketClient.dst;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "UnittWebSocketClient/UnittWebSocketClient-Prefix.pch";
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -523,6 +528,7 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "UnittWebSocketClientTests/UnittWebSocketClientTests-Prefix.pch";
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = "UnittWebSocketClientTests/UnittWebSocketClientTests-Info.plist";
 				OTHER_LDFLAGS = (
 					"-framework",
@@ -543,6 +549,7 @@
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "UnittWebSocketClientTests/UnittWebSocketClientTests-Prefix.pch";
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = "UnittWebSocketClientTests/UnittWebSocketClientTests-Info.plist";
 				OTHER_LDFLAGS = (
 					"-framework",
