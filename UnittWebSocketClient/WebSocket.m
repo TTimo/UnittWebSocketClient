@@ -450,28 +450,28 @@ WebSocketWaitingState waitingState;
         fragment = [WebSocketFragment fragmentWithData:aData];
         [pendingFragments enqueue:fragment];
     }
-
-    //if we have a fragment, let's see if we can parse it and continue
-    if (fragment)
+    else
     {
         //append the data
         [fragment.fragment appendData:aData];
+    }
 
-        //parse the data, if possible
-        if (fragment.canBeParsed) 
+    NSAssert(fragment != nil, @"Websocket fragment should never be nil");
+
+    //parse the data, if possible
+    if (fragment.canBeParsed)
+    {
+        [fragment parseContent];
+
+        //if we have a complete fragment, handle it
+        if (fragment.isValid)
         {
-            [fragment parseContent];
-
-            //if we have a complete fragment, handle it
-            if (fragment.isValid)
-            {
-                [self handleCompleteFragment:fragment];
-            }
+            [self handleCompleteFragment:fragment];
         }
     }
 
     //if we have extra data, handle it
-    if (fragment.messageLength && [aData length] > fragment.messageLength)
+    if (fragment.messageLength > 0 && ([aData length] > fragment.messageLength))
     {
         [self handleMessageData:[aData subdataWithRange:NSMakeRange(fragment.messageLength, [aData length] - fragment.messageLength)]];
     }
@@ -523,8 +523,12 @@ WebSocketWaitingState waitingState;
     [headers addObject:[HandshakeHeader headerWithValue:self.config.origin forKey:@"Sec-WebSocket-Origin"]];
     
     //handle version
-    [headers addObject:[HandshakeHeader headerWithValue:[NSString stringWithFormat:@"%i",self.config.version] forKey:@"Sec-WebSocket-Version"]];
-    
+    if (self.config.version == WebSocketVersion10) {
+        [headers addObject:[HandshakeHeader headerWithValue:[NSString stringWithFormat:@"%i",8] forKey:@"Sec-WebSocket-Version"]];
+    } else {
+        [headers addObject:[HandshakeHeader headerWithValue:[NSString stringWithFormat:@"%i",self.config.version] forKey:@"Sec-WebSocket-Version"]];
+    }
+
     //handle protocol
     if (self.config.protocols && self.config.protocols.count > 0)
     {
@@ -800,7 +804,10 @@ WebSocketWaitingState waitingState;
     
     //continue with handshake
     NSString *requestPath = self.config.url.path;
-    if (self.config.url.query) 
+    if (requestPath == nil || requestPath.length == 0) {
+        requestPath = @"/";
+    }
+    if (self.config.url.query)
     {
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.config.url.query];
     }

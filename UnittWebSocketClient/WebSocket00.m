@@ -403,7 +403,11 @@ int randFromRange(int min, int max)
     
     //continue with handshake
     NSString *requestPath = self.url.path;
-    if (self.url.query) 
+    if (requestPath == nil || requestPath.length == 0) {
+        requestPath = @"/";
+    }
+    NSLog(@"Request path: %@", requestPath);
+    if (self.url.query)
     {
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }

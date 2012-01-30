@@ -434,28 +434,28 @@ WebSocketWaitingState waitingState;
         fragment = [WebSocketFragment fragmentWithData:aData];
         [pendingFragments enqueue:fragment];
     }
-
-    //if we have a fragment, let's see if we can parse it and continue
-    if (fragment)
+    else
     {
         //append the data
         [fragment.fragment appendData:aData];
+    }
 
-        //parse the data, if possible
-        if (fragment.canBeParsed)
+    NSAssert(fragment != nil, @"Websocket fragment should never be nil");
+
+    //parse the data, if possible
+    if (fragment.canBeParsed)
+    {
+        [fragment parseContent];
+
+        //if we have a complete fragment, handle it
+        if (fragment.isValid)
         {
-            [fragment parseContent];
-
-            //if we have a complete fragment, handle it
-            if (fragment.isValid)
-            {
-                [self handleCompleteFragment:fragment];
-            }
+            [self handleCompleteFragment:fragment];
         }
     }
 
     //if we have extra data, handle it
-    if (fragment.messageLength && [aData length] > fragment.messageLength)
+    if (fragment.messageLength > 0 && ([aData length] > fragment.messageLength))
     {
         [self handleMessageData:[aData subdataWithRange:NSMakeRange(fragment.messageLength, [aData length] - fragment.messageLength)]];
     }
@@ -537,7 +537,7 @@ WebSocketWaitingState waitingState;
                     "Sec-WebSocket-Origin: %@\r\n"
                     "Sec-WebSocket-Protocol: %@\r\n"
                     "Sec-WebSocket-Key: %@\r\n"
-                    "Sec-WebSocket-Version: 10\r\n"
+                    "Sec-WebSocket-Version: 8\r\n"
                     "\r\n",
                     aRequestPath, [self buildHost], self.origin, protocolFragment, wsSecKey];
         }
@@ -726,7 +726,10 @@ WebSocketWaitingState waitingState;
     
     //continue with handshake
     NSString *requestPath = self.url.path;
-    if (self.url.query) 
+    if (requestPath == nil || requestPath.length == 0) {
+        requestPath = @"/";
+    }
+    if (self.url.query)
     {
         requestPath = [requestPath stringByAppendingFormat:@"?%@", self.url.query];
     }

@@ -22,8 +22,10 @@
 
 @implementation UnittWebSocketClient00Tests
 
+
 @synthesize ws;
 @synthesize response;
+
 
 #pragma mark WebSocketDelegate
 - (void) didOpen
@@ -51,12 +53,13 @@
     }
 }
 
+
 #pragma mark Test
 - (void)setUp
 {
     [super setUp];
     
-    ws = [[WebSocket00 webSocketWithURLString:@"ws://echo.websocket.org/" delegate:self origin:@"http://www.websocket.org" protocols:nil tlsSettings:nil verifyHandshake:YES] retain];
+    ws = [[WebSocket00 webSocketWithURLString:@"ws://echo.websocket.org" delegate:self origin:@"http://www.websocket.org" protocols:nil tlsSettings:nil verifyHandshake:YES] retain];
 }
 
 - (void)tearDown
@@ -84,5 +87,6 @@
     [ws release];
     [super dealloc];
 }
+
 
 @end
