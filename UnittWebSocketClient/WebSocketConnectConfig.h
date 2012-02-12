@@ -25,7 +25,8 @@ enum
 {
     WebSocketVersion07 = 7,
     WebSocketVersion08 = 8,
-    WebSocketVersion10 = 10
+    WebSocketVersion10 = 10,
+    WebSocketVersionRFC6455 = 6455
 };
 typedef NSUInteger WebSocketVersion;
 
@@ -102,6 +103,11 @@ typedef NSUInteger WebSocketVersion;
 @property(nonatomic,copy) NSString* origin;
 
 /**
+* Specifies whether to include the origin in the handshake request. Defaults to YES.
+*/
+@property(nonatomic,assign) BOOL useOrigin;
+
+/**
  * The host string is created from the url.
  **/
 @property(nonatomic,copy) NSString* host;
@@ -112,10 +118,11 @@ typedef NSUInteger WebSocketVersion;
 @property(nonatomic,retain) NSMutableArray* serverExtensions;
 
 /**
- * The list of extensions supported by the client.
+ * The list of extensions supported by the client. An item can contain an ordered list of extensions as
+ * an array of extensions. To add an ordered list of extensions, add an the array or call the addExtensions:
+ * operation (unavailable in versions prior to the standard).
  **/
 @property(nonatomic,retain) NSMutableArray* extensions;
-
 
 /**
  * Settings for securing the connection using SSL/TLS.
@@ -158,7 +165,19 @@ typedef NSUInteger WebSocketVersion;
 + (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSArray*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
 - (id) initWithURLString:(NSString *) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSArray*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;
 
+/**
+* Add a supported extension.
+*/
+- (void) addExtension:(NSString*) aExtension;
+
+/**
+* Add an ordered set of supported extensions.
+*/
+- (void) addExtensions:(NSArray*) aExtensions;
+
+
+@end
+
 extern NSString *const WebSocketConnectConfigException;
 extern NSString *const WebSocketConnectConfigErrorDomain;
 
-@end

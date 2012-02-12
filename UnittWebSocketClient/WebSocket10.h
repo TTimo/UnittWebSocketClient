@@ -47,7 +47,7 @@ enum
     WebSocketCloseStatusAbnormalButMissingStatus = 1006, //designated for use in	applications expecting a status code
                                                         //to indicate that the connection was closed abnormally, e.g.
                                                         //without sending or receiving a Close control frame.
-    WebSocketCloseStatusInvalidUtf8 = 1007 //indicates that an endpoint is terminating the connection because it has 
+    WebSocketCloseStatusInvalidData = 1007 //indicates that an endpoint is terminating the connection because it has
                                            //received data that was supposed to be UTF-8 (such as in a text frame) that 
                                            //was in fact not valid UTF-8
 };

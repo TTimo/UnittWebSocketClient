@@ -42,16 +42,28 @@ enum
                                                 //because it has received a type of data it cannot accept 
                                                 //(e.g. an endpoint that understands only text data MAY 
                                                 //send this if it receives a binary message)
-    WebSocketCloseStatusMessageTooLarge = 1004, //indicates that an endpoint is terminating the connection
-                                                //because it has received a message that is too large
+    WebSocketCloseStatusLegacyMessageTooLarge = 1004, //indicates that an endpoint is terminating the connection
+                                                //because it has received a message that is too large (prior to rfc6455)
     WebSocketCloseStatusNormalButMissingStatus = 1005, //designated for use in applications expecting a status code 
                                                        //to indicate that no status code was actually present
-    WebSocketCloseStatusAbnormalButMissingStatus = 1006, //designated for use in	applications expecting a status code
+    WebSocketCloseStatusAbnormalButMissingStatus = 1006, //designated for use in applications expecting a status code
                                                          //to indicate that the connection was closed abnormally, e.g.
                                                          //without sending or receiving a Close control frame.
-    WebSocketCloseStatusInvalidUtf8 = 1007 //indicates that an endpoint is terminating the connection because it has 
-                                           //received data that was supposed to be UTF-8 (such as in a text frame) that 
-                                           //was in fact not valid UTF-8
+    WebSocketCloseStatusInvalidData = 1007, //indicates that an endpoint is terminating the connection because it has
+                                           //received data that is invalid, ex: supposed be UTF-8 (such as in a text frame)
+                                           // that was in fact not valid UTF-8
+    WebSocketCloseStatusViolatesPolicy = 1008, //indicates that an endpoint is terminating the connection because it has
+                                         // received a message that violates its policy.  This is a generic status code
+                                         // that can be returned when there is no other more suitable status code
+                                         // or if there is a need to hide specific details about the policy.
+    WebSocketCloseStatusMessageTooLarge = 1009, //indicates that an endpoint is terminating the connection
+                                                //because it has received a message that is too large
+    WebSocketCloseStatusMissingExtensions = 1010, //indicates that an endpoint (client) is terminating the connection because
+                                                // it has expected the server to negotiate one or more extension, but the
+                                                // server didn't return them in the response message of the WebSocket handshake
+    WebSocketCloseStatusServerError = 1011, //indicates that a server is terminating the connection because it encountered an
+                                            // unexpected condition that prevented it from fulfilling the request
+    WebSocketCloseStatusTlsHandshakeError = 1015 //indicate that the connection was closed due to a failure to perform a TLS handshake
 };
 typedef NSUInteger WebSocketCloseStatus;
 
@@ -104,10 +116,8 @@ typedef NSUInteger WebSocketReadyState;
 
 @interface WebSocket : NSObject 
 {
-@private
-    id<WebSocketDelegate> delegate;
+@protected
     AsyncSocket* socket;
-    WebSocketReadyState readystate;
     NSError* closingError;
     NSString* wsSecKey;
     NSString* wsSecKeyHandshake;
@@ -116,6 +126,9 @@ typedef NSUInteger WebSocketReadyState;
     NSUInteger closeStatusCode;
     NSString* closeMessage;
     BOOL sendCloseInfoToListener;
+@private
+    id<WebSocketDelegate> delegate;
+    WebSocketReadyState readystate;
     WebSocketConnectConfig* config;
 }
 

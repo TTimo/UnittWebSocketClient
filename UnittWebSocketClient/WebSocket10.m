@@ -192,7 +192,7 @@ WebSocketWaitingState waitingState;
         }
         else if (aMessage)
         {
-            [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+            [self close:WebSocketCloseStatusInvalidData message:nil];
         }
     }
 }
@@ -311,7 +311,7 @@ WebSocketWaitingState waitingState;
                     }
                     else
                     {
-                        [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+                        [self close:WebSocketCloseStatusInvalidData message:nil];
                     }
                 }
             }
@@ -359,7 +359,7 @@ WebSocketWaitingState waitingState;
                 }
                 else
                 {
-                    [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+                    [self close:WebSocketCloseStatusInvalidData message:nil];
                 }
                 break;
             }
@@ -410,7 +410,7 @@ WebSocketWaitingState waitingState;
         }
         else
         {
-            [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+            [self close:WebSocketCloseStatusInvalidData message:nil];
         }
     }
 }

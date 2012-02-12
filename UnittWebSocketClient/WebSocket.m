@@ -21,6 +21,7 @@
 #import "WebSocket.h"
 #import "WebSocketFragment.h"
 #import "HandshakeHeader.h"
+#import "WebSocket10.h"
 
 
 enum 
@@ -47,6 +48,7 @@ typedef NSUInteger WebSocketWaitingState;
 - (void) generateSecKeys;
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
 - (NSMutableArray*) getServerExtensions:(NSMutableArray*) aServerHeaders;
+- (BOOL) isValidServerExtension:(NSArray*) aServerExtensions;
 - (void) sendClose:(NSUInteger) aStatusCode message:(NSString*) aMessage;
 - (void) sendMessage:(NSData*) aMessage messageWithOpCode:(MessageOpCode) aOpCode;
 - (void) sendMessage:(WebSocketFragment*) aFragment;
@@ -63,6 +65,11 @@ typedef NSUInteger WebSocketWaitingState;
 - (HandshakeHeader*) headerForKey:(NSString*) aKey inHeaders:(NSMutableArray*) aHeaders;
 @end
 
+
+@interface WebSocket ()
+- (NSString *)getExtensionsAsString:(NSArray *)aExtensions;
+
+@end
 
 @implementation WebSocket
 
@@ -204,7 +211,7 @@ WebSocketWaitingState waitingState;
             }
             else if (self.config.version >= WebSocketVersion10)
             {
-                [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+                [self close:WebSocketCloseStatusInvalidData message:nil];
             }
         }
     }
@@ -324,7 +331,7 @@ WebSocketWaitingState waitingState;
                     }
                     else if (self.config.version >= WebSocketVersion10)
                     {
-                        [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+                        [self close:WebSocketCloseStatusInvalidData message:nil];
                     }
                 }
             }
@@ -374,7 +381,7 @@ WebSocketWaitingState waitingState;
                     }
                     else if (self.config.version >= WebSocketVersion10)
                     {
-                        [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+                        [self close:WebSocketCloseStatusInvalidData message:nil];
                     }
                 }
                 break;
@@ -426,7 +433,7 @@ WebSocketWaitingState waitingState;
         }
         else
         {
-            [self close:WebSocketCloseStatusInvalidUtf8 message:nil];
+            [self close:WebSocketCloseStatusInvalidData message:nil];
         }
     }
 }
@@ -461,6 +468,11 @@ WebSocketWaitingState waitingState;
     //parse the data, if possible
     if (fragment.canBeParsed)
     {
+        if (fragment.hasMask) {
+            //client is not allowed to receive data that is masked and must fail the connection
+            [self close:WebSocketCloseStatusProtocolError message:@"Server cannot mask data."];
+            return;
+        }
         [fragment parseContent];
 
         //if we have a complete fragment, handle it
@@ -520,11 +532,19 @@ WebSocketWaitingState waitingState;
     [headers addObject:[HandshakeHeader headerWithValue:self.config.host forKey:@"Host"]];
     
     //handle origin
-    [headers addObject:[HandshakeHeader headerWithValue:self.config.origin forKey:@"Sec-WebSocket-Origin"]];
-    
+    if (self.config.useOrigin) {
+        if (self.config.version < WebSocketVersionRFC6455) {
+            [headers addObject:[HandshakeHeader headerWithValue:self.config.origin forKey:@"Sec-WebSocket-Origin"]];
+        } else {
+            [headers addObject:[HandshakeHeader headerWithValue:self.config.origin forKey:@"Origin"]];
+        }
+    }
+
     //handle version
     if (self.config.version == WebSocketVersion10) {
         [headers addObject:[HandshakeHeader headerWithValue:[NSString stringWithFormat:@"%i",8] forKey:@"Sec-WebSocket-Version"]];
+    } else if(self.config.version == WebSocketVersionRFC6455) {
+        [headers addObject:[HandshakeHeader headerWithValue:[NSString stringWithFormat:@"%i",13] forKey:@"Sec-WebSocket-Version"]];
     } else {
         [headers addObject:[HandshakeHeader headerWithValue:[NSString stringWithFormat:@"%i",self.config.version] forKey:@"Sec-WebSocket-Version"]];
     }
@@ -554,16 +574,8 @@ WebSocketWaitingState waitingState;
     if (self.config.extensions && self.config.extensions.count > 0)
     {
         //build extensions fragment
-        NSMutableString* extensionFragment = [NSMutableString string];
-        for (NSString* item in self.config.extensions)
-        {
-            if ([extensionFragment length] > 0) 
-            {
-                [extensionFragment appendString:@", "];
-            }
-            [extensionFragment appendString:item];
-        }
-        
+        NSString* extensionFragment = [self getExtensionsAsString:self.config.extensions];
+
         //return request with extensions
         if ([extensionFragment length] > 0)
         {
@@ -572,6 +584,45 @@ WebSocketWaitingState waitingState;
     }
     
     return [self buildStringFromHeaders:headers resource:aRequestPath];
+}
+
+- (NSString*) getExtensionsAsString:(NSArray*) aExtensions
+{
+    NSMutableString* extensionFragment = [NSMutableString string];
+    for (id item in aExtensions)
+    {
+        if ([item isKindOfClass:[NSString class]])
+        {
+            if ([extensionFragment length] > 0) 
+            {
+                [extensionFragment appendString:@"; "];
+            }
+            [extensionFragment appendString:(NSString*) item];
+        }
+        else if ([item isKindOfClass:[NSArray class]])
+        {
+            //build ordered list of extensions
+            NSArray* items = (NSArray*) item;
+            NSMutableString* itemFragment = [NSMutableString string];
+            for (NSString* childItem in items)
+            {
+                if ([itemFragment length] > 0) 
+                {
+                    [itemFragment appendString:@", "];
+                }
+                [itemFragment appendString:childItem];
+            }
+
+            //add to list of extensions
+            if ([extensionFragment length] > 0)
+            {
+                [extensionFragment appendString:@"; "];
+            }
+            [extensionFragment appendString:itemFragment];
+        }
+    }
+    
+    return extensionFragment;
 }
                     
 - (NSString*) buildStringFromHeaders:(NSMutableArray*) aHeaders resource:(NSString*) aResource
@@ -675,11 +726,29 @@ WebSocketWaitingState waitingState;
         {
             return false;
         }
+
+        //verify that version specified matches the version we requested
+
         
         return true;
     }
     
     return false;
+}
+
+- (void) sendHandshake:(AsyncSocket*) aSocket
+{
+        //continue with handshake
+        NSString *requestPath = self.config.url.path;
+        if (requestPath == nil || requestPath.length == 0) {
+            requestPath = @"/";
+        }
+        if (self.config.url.query)
+        {
+            requestPath = [requestPath stringByAppendingFormat:@"?%@", self.config.url.query];
+        }
+        NSString* getRequest = [self getRequest: requestPath];
+        [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.config.timeout tag:TagHandshake];
 }
 
 - (NSMutableArray*) getServerExtensions:(NSMutableArray*) aServerHeaders
@@ -706,6 +775,44 @@ WebSocketWaitingState waitingState;
     }
     
     return results;
+}
+
+- (BOOL) isValidServerExtension:(NSArray*) aServerExtensions
+{
+    if (self.config.extensions && self.config.extensions.count > 0)
+    {
+        //if we only have one extension, see if its in our list of accepted extensions
+        if (aServerExtensions.count == 1)
+        {
+            NSString* serverExtension = [aServerExtensions objectAtIndex:0];
+            for (id item in self.config.extensions)
+            {
+                if ([item isKindOfClass:[NSString class]])
+                {
+                    if ([serverExtension isEqualToString:(NSString*) item])
+                    {
+                        return YES;
+                    }
+                }
+            }
+        }
+        
+        //if we have a list of extensions, see if this exact ordered list exists in our list of accepted extensions
+        for (id item in self.config.extensions)
+        {
+            if ([item isKindOfClass:[NSArray class]])
+            {
+                if ([aServerExtensions isEqualToArray:(NSArray*) item])
+                {
+                    return YES;
+                }
+            }
+       }
+        
+        return NO;
+    }
+    
+    return (aServerExtensions == nil || aServerExtensions.count == 0);
 }
 
 
@@ -772,6 +879,15 @@ WebSocketWaitingState waitingState;
     [self dispatchClosed:closeStatusCode message:closeMessage error:closingError];
 }
 
+- (void)onSocket:(AsyncSocket *) aSocket didSecure:(BOOL) aDidSecure {
+    if (self.config.isSecure && !aDidSecure) {
+        [self close:WebSocketCloseStatusTlsHandshakeError message:nil];
+    }
+    else {
+        [self sendHandshake:aSocket];
+    }
+}
+
 - (void) onSocket:(AsyncSocket *) aSocket willDisconnectWithError:(NSError *) aError
 {
     switch (self.readystate) 
@@ -801,18 +917,9 @@ WebSocketWaitingState waitingState;
         
         [socket startTLS:settings];
     }
-    
-    //continue with handshake
-    NSString *requestPath = self.config.url.path;
-    if (requestPath == nil || requestPath.length == 0) {
-        requestPath = @"/";
+    else {
+        [self sendHandshake:aSocket];
     }
-    if (self.config.url.query)
-    {
-        requestPath = [requestPath stringByAppendingFormat:@"?%@", self.config.url.query];
-    }
-    NSString* getRequest = [self getRequest: requestPath];
-    [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.config.timeout tag:TagHandshake];
 }
 
 - (void) onSocket:(AsyncSocket*) aSocket didWriteDataWithTag:(long) aTag 
@@ -832,15 +939,31 @@ WebSocketWaitingState waitingState;
         {
             //grab protocol from server
             HandshakeHeader* header = [self headerForKey:@"Sec-WebSocket-Protocol" inHeaders:self.config.serverHeaders];
+            if (!header) {
+                header = [self headerForKey:@"Sec-WebSocket-Protocol-Server" inHeaders:self.config.serverHeaders];
+            }
             if (header)
             {
-                self.config.serverProtocol = header.value;
+                //if version is rfc6455 or later, null out value if it was not a requested protocol
+                if (self.config.version < WebSocketVersionRFC6455 || [self.config.protocols containsObject:header]) {
+                    self.config.serverProtocol = header.value;
+                }
             }
             
             //grab extensions from the server
             NSMutableArray* extensions = [self getServerExtensions:self.config.serverHeaders];
             if (extensions)
             {
+                //validate the extensions, if rfc6455 or later
+                if (self.config.version >= WebSocketVersionRFC6455 && self.config.extensions.count) {
+                    if (![self isValidServerExtension:extensions])
+                    {
+                        NSString* extensionFragment = [self getExtensionsAsString:self.config.extensions];
+                        [self close:WebSocketCloseStatusMissingExtensions message:extensionFragment];
+                        return;
+                    }
+                }
+
                 self.config.serverExtensions = extensions;
             }
             

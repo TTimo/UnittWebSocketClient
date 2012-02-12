@@ -36,6 +36,7 @@
 @synthesize maxPayloadSize;
 @synthesize url;
 @synthesize origin;
+@synthesize useOrigin;
 @synthesize host;
 @synthesize timeout;
 @synthesize closeTimeout;
@@ -52,6 +53,17 @@
 
 NSString* const WebSocketConnectConfigException = @"WebSocketConnectConfigException";
 NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErrorDomain";
+
+#pragma mark Config Logic
+- (void) addExtension:(NSString *) aExtension
+{
+    [self.extensions addObject:aExtension];
+}
+
+- (void) addExtensions:(NSArray *)aExtensions
+{
+    [self.extensions addObject:aExtensions];
+}
 
 
 #pragma mark Lifecycle
@@ -109,7 +121,7 @@ NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErro
         self.timeout = 30.0;
         self.closeTimeout = 30.0;
         self.maxPayloadSize = 32*1024;
-        self.version = WebSocketVersion07;
+        self.version = WebSocketVersionRFC6455;
     }
     return self;
 }
