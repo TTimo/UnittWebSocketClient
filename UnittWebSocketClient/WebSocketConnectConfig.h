@@ -97,6 +97,12 @@ typedef NSUInteger WebSocketVersion;
 @property(nonatomic,assign) BOOL isSecure;
 
 /**
+ * Indicates whether the websocket will try to reconnect using a different version if the specified
+ * one is not supported.
+ **/
+@property(nonatomic,assign) BOOL retryOtherVersion;
+
+/**
  * Origin is used more in a browser setting, but it is intended to prevent cross-site scripting. If
  * nil, the client will fill this in using the url provided by the websocket.
  **/

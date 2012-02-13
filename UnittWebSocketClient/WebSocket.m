@@ -46,6 +46,8 @@ typedef NSUInteger WebSocketWaitingState;
 - (NSString*) getRequest: (NSString*) aRequestPath;
 - (NSData*) getSHA1:(NSData*) aPlainText;
 - (void) generateSecKeys;
+- (NSString *)getExtensionsAsString:(NSArray *)aExtensions;
+- (BOOL)supportsAnotherSupportedVersion:(NSString *)aResponse;
 - (BOOL) isUpgradeResponse: (NSString*) aResponse;
 - (NSMutableArray*) getServerExtensions:(NSMutableArray*) aServerHeaders;
 - (BOOL) isValidServerExtension:(NSArray*) aServerExtensions;
@@ -63,13 +65,9 @@ typedef NSUInteger WebSocketWaitingState;
 - (NSString*) buildStringFromHeaders:(NSMutableArray*) aHeaders resource:(NSString*) aResource;
 - (NSMutableArray*) buildHeadersFromString:(NSString*) aHeaders;
 - (HandshakeHeader*) headerForKey:(NSString*) aKey inHeaders:(NSMutableArray*) aHeaders;
+- (NSArray*) headersForKey:(NSString*) aKey inHeaders:(NSMutableArray*) aHeaders;
 @end
 
-
-@interface WebSocket ()
-- (NSString *)getExtensionsAsString:(NSArray *)aExtensions;
-
-@end
 
 @implementation WebSocket
 
@@ -691,8 +689,37 @@ WebSocketWaitingState waitingState;
             }
         }
     }
-    
+
     return nil;
+}
+
+- (NSArray*) headersForKey:(NSString*) aKey inHeaders:(NSMutableArray*) aHeaders
+{
+    NSMutableArray* results = [NSMutableArray array];
+    
+    for (HandshakeHeader* header in aHeaders)
+    {
+        if (header)
+        {
+            if ([header keyMatchesCaseInsensitiveString:aKey])
+            {
+                [results addObject:header];
+            }
+        }
+    }
+    
+    return results;
+}
+
+- (BOOL) supportsAnotherSupportedVersion: (NSString*) aResponse
+{
+    //a HTTP 400 response is the only valid one
+    if ([aResponse hasPrefix:@"HTTP/1.1 400"])
+    {
+        return [aResponse rangeOfString:@"Sec-WebSocket-Version"].location != NSNotFound;
+    }
+
+    return false;
 }
 
 - (BOOL) isUpgradeResponse: (NSString*) aResponse
@@ -749,6 +776,36 @@ WebSocketWaitingState waitingState;
         }
         NSString* getRequest = [self getRequest: requestPath];
         [aSocket writeData:[getRequest dataUsingEncoding:NSASCIIStringEncoding] withTimeout:self.config.timeout tag:TagHandshake];
+}
+
+- (NSMutableArray*) getServerVersions:(NSMutableArray*) aServerHeaders
+{
+    NSMutableArray* results = [NSMutableArray array];
+    NSMutableArray * tempResults = [NSMutableArray array];
+
+    //find all entries keyed by Sec-WebSocket-Version or Sec-WebSocket-Version-Server
+    [tempResults addObjectsFromArray:[self headersForKey:@"Sec-WebSocket-Version" inHeaders:self.config.serverHeaders]];
+    [tempResults addObjectsFromArray:[self headersForKey:@"Sec-WebSocket-Version-Server" inHeaders:self.config.serverHeaders]];
+    
+    //loop through values trimming and adding to versions
+    for (HandshakeHeader* header in tempResults)
+    {
+        NSString* extensionValues = header.value;
+        NSArray *listItems = [extensionValues componentsSeparatedByString:@","];
+        for (NSString* item in listItems)
+        {
+            if (item)
+            {
+                NSString* value = [item stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceCharacterSet]];
+                if (value && value.length)
+                {
+                    [results addObject:value];
+                }
+            }
+        }
+    }
+
+    return results;
 }
 
 - (NSMutableArray*) getServerExtensions:(NSMutableArray*) aServerHeaders
@@ -971,7 +1028,44 @@ WebSocketWaitingState waitingState;
             readystate = WebSocketReadyStateOpen;
             [self dispatchOpened];
             [self continueReadingMessageStream];
-        } 
+        }
+        else if ([self supportsAnotherSupportedVersion: response])
+        {
+            //use property to determine if we try a different version
+            BOOL retry = NO;
+            NSArray* versions = [self getServerVersions:self.config.serverHeaders];
+            if (self.config.retryOtherVersion) 
+            {
+                for(NSString* version in versions)
+                {
+                    if (version && version.length)
+                    {
+                        switch ([version intValue]) 
+                        {
+                            case WebSocketVersion07:
+                                self.config.version = WebSocketVersion07;
+                                retry = YES;
+                                break;
+                            case WebSocketVersion10:
+                                self.config.version = WebSocketVersion10;
+                                retry = YES;
+                                break;
+                        }
+                    }
+                }
+            }
+
+            //retry if able
+            if (retry)
+            {
+                [self open];
+            }
+            else
+            {
+                //send failure since we can't retry a supported version
+                [self dispatchFailure:[NSError errorWithDomain:WebSocketErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"Unsupported Version", NSLocalizedDescriptionKey, response, NSLocalizedFailureReasonErrorKey, nil]]];
+            }
+        }
         else 
         {
             [self dispatchFailure:[NSError errorWithDomain:WebSocketErrorDomain code:0 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"Bad handshake", NSLocalizedDescriptionKey, response, NSLocalizedFailureReasonErrorKey, nil]]];

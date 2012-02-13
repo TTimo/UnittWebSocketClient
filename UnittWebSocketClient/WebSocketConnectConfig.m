@@ -41,6 +41,7 @@
 @synthesize timeout;
 @synthesize closeTimeout;
 @synthesize tlsSettings;
+@synthesize retryOtherVersion;
 @synthesize protocols;
 @synthesize verifySecurityKey;
 @synthesize serverProtocol;
@@ -100,6 +101,8 @@ NSString* const WebSocketConnectConfigErrorDomain = @"WebSocketConnectConfigErro
         {
             self.origin = [self buildOrigin];
         }
+        self.useOrigin = YES;
+        self.retryOtherVersion = YES;
         self.host = [self buildHost];
         if (aProtocols)
         {
