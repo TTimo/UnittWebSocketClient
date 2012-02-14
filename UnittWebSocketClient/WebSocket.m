@@ -18,10 +18,10 @@
 //  the License.
 //
 
+#import <sys/socket.h>
 #import "WebSocket.h"
 #import "WebSocketFragment.h"
 #import "HandshakeHeader.h"
-#import "WebSocket10.h"
 
 
 enum 
@@ -933,6 +933,7 @@ WebSocketWaitingState waitingState;
             }
         }
     }
+    NSLog(@"Socket disconnected.");
     [self dispatchClosed:closeStatusCode message:closeMessage error:closingError];
 }
 
