@@ -460,6 +460,9 @@ int randFromRange(int min, int max)
 
 
 #pragma mark Lifecycle
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 + (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket00Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake] autorelease];
@@ -550,6 +553,7 @@ int randFromRange(int min, int max)
     }
     return self;
 }
+#pragma clang diagnostic pop
 
 -(void) dealloc 
 {

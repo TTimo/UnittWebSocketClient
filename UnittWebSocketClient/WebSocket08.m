@@ -734,6 +734,9 @@ WebSocketWaitingState waitingState;
 
 
 #pragma mark Lifecycle
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 + (id) webSocketWithURLString:(NSString*) aUrlString delegate:(id<WebSocket08Delegate>) aDelegate origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings verifyHandshake:(BOOL) aVerifyHandshake
 {
     return [[[[self class] alloc] initWithURLString:aUrlString delegate:aDelegate origin:aOrigin protocols:aProtocols tlsSettings:aTlsSettings verifyHandshake:aVerifyHandshake] autorelease];
@@ -781,6 +784,7 @@ WebSocketWaitingState waitingState;
     }
     return self;
 }
+#pragma clang diagnostic pop
 
 -(void) dealloc 
 {
