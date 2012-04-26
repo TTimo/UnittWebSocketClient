@@ -18,7 +18,6 @@
 //  the License.
 //
 
-#import <sys/socket.h>
 #import "WebSocket.h"
 #import "WebSocketFragment.h"
 #import "HandshakeHeader.h"
@@ -54,7 +53,7 @@ typedef NSUInteger WebSocketWaitingState;
 - (void) sendClose:(NSUInteger) aStatusCode message:(NSString*) aMessage;
 - (void) sendMessage:(NSData*) aMessage messageWithOpCode:(MessageOpCode) aOpCode;
 - (void) sendMessage:(WebSocketFragment*) aFragment;
-- (void) handleMessageData:(NSData*) aData;
+- (int) handleMessageData:(NSData*) aData offset:(NSUInteger) aOffset;
 - (void) handleCompleteFragment:(WebSocketFragment*) aFragment;
 - (void) handleCompleteFragments;
 - (void) handleClose:(WebSocketFragment*) aFragment;
@@ -305,6 +304,7 @@ WebSocketWaitingState waitingState;
     //if we are not in continuation and its final, dequeue
     if (aFragment.isFinal && aFragment.opCode != MessageOpCodeContinuation)
     {
+//        NSLog(@"Dequeuing final fragment");
         [pendingFragments dequeue];
     }
     
@@ -314,6 +314,7 @@ WebSocketWaitingState waitingState;
         case MessageOpCodeContinuation:
             if (aFragment.isFinal)
             {
+//                NSLog(@"Handling complete list of fragments.");
                 [self handleCompleteFragments];
             }
             break;
@@ -331,6 +332,10 @@ WebSocketWaitingState waitingState;
                     {
                         [self close:WebSocketCloseStatusInvalidData message:nil];
                     }
+                }
+                else
+                {
+                    [self dispatchTextMessageReceived:@""];
                 }
             }
             break;
@@ -445,33 +450,84 @@ WebSocketWaitingState waitingState;
     }
 }
 
-- (void) handleMessageData:(NSData*) aData
+// TODO: use a temporary buffer for the fragment payload instead of a queue of fragments
+- (int) handleMessageData:(NSData*) aData offset:(NSUInteger) aOffset
 {
+//    if (aOffset == 0) {
+//        NSLog(@"HandleMessageData(%u):%@", aOffset, aData);
+//    } else {
+//        NSLog(@"Recursive HandleMessageData(%u):%@", aOffset, [aData subdataWithRange:NSMakeRange(aOffset, aData.length - aOffset)]);
+//    }
+    //init
+    NSUInteger lengthOfRemainder = 0;
+    NSUInteger existingLength = 0;
+    int offset = -1;
+
     //grab last fragment, use if not complete
     WebSocketFragment* fragment = [pendingFragments lastObject];
     if (!fragment || fragment.isValid)
     {
         //assign web socket fragment since the last one was complete
-        fragment = [WebSocketFragment fragmentWithData:aData];
+        fragment = [[WebSocketFragment alloc] init];
         [pendingFragments enqueue:fragment];
+        [fragment release];
+//        fragment = [pendingFragments lastObject];
     }
     else
     {
-        //append the data
-        [fragment.fragment appendData:aData];
+        //grab existing length
+        existingLength = fragment.fragment.length;
     }
-
     NSAssert(fragment != nil, @"Websocket fragment should never be nil");
 
+    //if we dont know the length - try to figure it out
+    if (!fragment.isHeaderValid) {
+        [fragment parseHeader];
+
+        //if we still don't have a length, see if we have enough
+        if (!fragment.isHeaderValid) {
+            if (![fragment parseHeader:aData from:aOffset]) {
+                //if we still don't have a valid length, append all data and return
+                if (fragment.fragment) {
+                    [fragment.fragment appendData:aData];
+                } else {
+                    fragment.fragment = [NSMutableData dataWithData:aData];
+                }
+                return offset;
+            }
+        }
+    }
+
+    //determine data length
+    NSUInteger possibleDataLength = aData.length - aOffset;
+    NSUInteger actualDataLength = possibleDataLength;
+    if ((possibleDataLength + existingLength > fragment.messageLength))
+    {
+        lengthOfRemainder = possibleDataLength - (fragment.messageLength - existingLength);
+        actualDataLength = possibleDataLength - lengthOfRemainder;
+    }
+
+    //append actual data
+    unsigned char* actualData = malloc(actualDataLength);
+    [aData getBytes:actualData range:NSMakeRange(aOffset, actualDataLength)];
+    if (fragment.fragment) {
+        [fragment.fragment appendBytes:actualData length:actualDataLength];
+    } else {
+        fragment.fragment = [NSMutableData dataWithBytes:actualData length:actualDataLength];
+    }
+    free(actualData);
+
     //parse the data, if possible
+//    NSLog(@"Fragment with opcode: %i, length: %i", fragment.opCode, fragment.messageLength);
     if (fragment.canBeParsed)
     {
         if (fragment.hasMask) {
             //client is not allowed to receive data that is masked and must fail the connection
             [self close:WebSocketCloseStatusProtocolError message:@"Server cannot mask data."];
-            return;
+            return offset;
         }
         [fragment parseContent];
+//        NSLog(@"Parsed fragment: opcode=%i, length=%i", fragment.opCode, fragment.messageLength);
 
         //if we have a complete fragment, handle it
         if (fragment.isValid)
@@ -481,11 +537,88 @@ WebSocketWaitingState waitingState;
     }
 
     //if we have extra data, handle it
-    if (fragment.messageLength > 0 && ([aData length] > fragment.messageLength))
-    {
-        [self handleMessageData:[aData subdataWithRange:NSMakeRange(fragment.messageLength, [aData length] - fragment.messageLength)]];
+    if (fragment.messageLength > 0 ) {
+        //if we have an offset, trim the data and call back into
+        if (lengthOfRemainder > 0) {
+            offset = actualDataLength + aOffset;
+//            if (offset % 66 > 0) {
+//                NSLog(@"Fragment: dataLength=%i, possibleDataLength=%i, actualDataLength=%i, messageLength=%i, existingLength=%i, remainder=%i, offset=%i", aData.length, possibleDataLength, actualDataLength, fragment.messageLength, existingLength, lengthOfRemainder, offset);
+//            }
+        }
     }
+//    NSLog(@"Fragment: opCode=%i, final=%@, dataLength=%i, possibleDataLength=%i, actualDataLength=%i, messageLength=%i, existingLength=%i, remainder=%i, offset=%i", fragment.opCode, (fragment.isFinal ? @"YES" : @"NO"), aData.length, possibleDataLength, actualDataLength, fragment.messageLength, existingLength, lengthOfRemainder, offset);
+
+    return offset;
 }
+
+//- (int) handleMessageData:(NSData*) aData offset:(NSUInteger) aOffset
+//{
+//    //grab last fragment, use if not complete
+//    WebSocketFragment* fragment = [pendingFragments lastObject];
+//    NSUInteger lengthOfRemainder = 0;
+//    NSUInteger existingLength = 0;
+//    NSUInteger actualDataLength = aData.length - aOffset;
+//    NSLog(@"Allocating data of length: %i", actualDataLength);
+//    unsigned char* actualData = malloc(actualDataLength);
+//    [aData getBytes:actualData range:NSMakeRange(aOffset, actualDataLength)];
+//    if (!fragment || fragment.isValid)
+//    {
+//        //assign web socket fragment since the last one was complete
+//        fragment = [WebSocketFragment fragmentWithData:[NSData dataWithBytes:actualData length:actualDataLength]];
+//        [pendingFragments enqueue:fragment];
+//    }
+//    else
+//    {
+//        //append the data
+//        existingLength = fragment.fragment.length;
+//        [fragment.fragment appendBytes:actualData length:actualDataLength];
+//    }
+//    free(actualData);
+//
+//    NSAssert(fragment != nil, @"Websocket fragment should never be nil");
+//
+//    //can we get to the header yet to determine length
+//    if (!fragment.isHeaderValid) {
+//        [fragment parseHeader];
+//    }
+//
+//    //parse the data, if possible
+//    NSLog(@"Fragment with opcode: %i, length: %i", fragment.opCode, aData.length);
+//    if (fragment.canBeParsed)
+//    {
+//        if (fragment.hasMask) {
+//            //client is not allowed to receive data that is masked and must fail the connection
+//            [self close:WebSocketCloseStatusProtocolError message:@"Server cannot mask data."];
+//            return -1;
+//        }
+//        [fragment parseContent];
+//
+//        //if we have a complete fragment, handle it
+//        if (fragment.isValid)
+//        {
+//            [self handleCompleteFragment:fragment];
+//        }
+//    }
+//
+//    //if we have extra data, handle it
+//    if (fragment.messageLength > 0 ) {
+//        //determine appropriate offset, if needed
+//        if ((actualDataLength + existingLength > fragment.messageLength))
+//        {
+//            lengthOfRemainder = actualDataLength - (fragment.messageLength - existingLength);
+//        }
+//
+//        //if we have an offset, trim the data and call back into
+//        if (lengthOfRemainder > 0 && (actualDataLength - lengthOfRemainder) > 0)
+//        {
+//            int offset = actualDataLength - lengthOfRemainder + aOffset;
+//            NSLog(@"Fragment: dataSize=%i, messageLength=%i, existingLength=%i, remainder=%i, offset=%i", actualDataLength, fragment.messageLength, existingLength, lengthOfRemainder, offset);
+//            return offset;
+//        }
+//    }
+//
+//    return -1;
+//}
 
 - (NSData*) getSHA1:(NSData*) aPlainText 
 {
@@ -1075,8 +1208,11 @@ WebSocketWaitingState waitingState;
     else if (aTag == TagMessage) 
     {
         //handle data
-        [self handleMessageData:aData];
-        
+        int offset = 0;
+        do {
+            offset = [self handleMessageData:aData offset:(NSUInteger) offset];
+        } while (offset >= 0);
+
         //keep reading
         [self continueReadingMessageStream];
     }

@@ -126,6 +126,7 @@ typedef NSUInteger WebSocketReadyState;
     NSUInteger closeStatusCode;
     NSString* closeMessage;
     BOOL sendCloseInfoToListener;
+    NSMutableData* fragmentBuffer;
 @private
     id<WebSocketDelegate> delegate;
     WebSocketReadyState readystate;

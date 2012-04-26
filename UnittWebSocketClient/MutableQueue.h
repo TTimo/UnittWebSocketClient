@@ -26,6 +26,7 @@
     NSMutableArray* items;
 }
 
+- (NSUInteger) count;
 - (id) dequeue;
 - (void) enqueue:(id) aObject;
 - (id) lastObject;

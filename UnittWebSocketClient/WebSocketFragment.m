@@ -37,6 +37,8 @@
 @synthesize payloadType;
 @synthesize fragment;
 @synthesize messageLength;
+@synthesize payloadLength;
+@synthesize payloadStart;
 
 
 #pragma mark Properties
@@ -64,6 +66,9 @@
 {
     if (self.messageLength > 0)
     {
+        if (payloadData) {
+            return payloadData.length == payloadLength;
+        }
         return payloadStart + payloadLength == [fragment length];
     }
     
@@ -72,11 +77,11 @@
 
 - (BOOL) canBeParsed
 {
-    if (self.messageLength > 0)
+    if (self.messageLength > 0 && self.isHeaderValid)
     {
         return [fragment length] >= (payloadStart + payloadLength);
     }
-    
+
     return NO;
 }
 
@@ -92,22 +97,21 @@
 
 - (NSUInteger) messageLength
 {
-    if (fragment && payloadStart) 
+    if (payloadStart > 0 && payloadLength >= 0)
     {
-        return payloadStart + payloadLength;
+        return (NSUInteger) payloadStart + payloadLength;
     }
-    
+
     return 0;
 }
 
 
 #pragma mark Parsing
-- (void) parseContent
-{
+- (BOOL) parseContent:(NSData *) aData {
     if ([self.fragment length] >= payloadStart + payloadLength)
     {
         //set payload
-        if (self.hasMask) 
+        if (self.hasMask)
         {
             self.payloadData = [self unmask:self.mask data:self.fragment range:NSMakeRange(payloadStart, payloadLength)];
         }
@@ -115,33 +119,45 @@
         {
             self.payloadData = [self.fragment subdataWithRange:NSMakeRange(payloadStart, payloadLength)];
         }
-        
+
         //trim fragment, if necessary
-        if ([self.fragment length] > self.messageLength)
-        {
-            self.fragment = [NSMutableData dataWithData:[self.fragment subdataWithRange:NSMakeRange(0, self.messageLength)]];
-        }
+//        if ([self.fragment length] > self.messageLength)
+//        {
+//            self.fragment = [NSMutableData dataWithData:[self.fragment subdataWithRange:NSMakeRange(0, self.messageLength)]];
+//        }
+        self.fragment = nil;
+    }
+
+}
+
+- (void) parseContent
+{
+    if (self.fragment) {
+        [self parseContent:self.fragment];
     }
 }
 
-- (void) parseHeader
-{
+- (BOOL) parseHeader:(NSData *) aData from:(NSUInteger) aOffset {
     //get header data bits
     int bufferLength = 14;
-    if ([self.fragment length] < bufferLength)
+    if ([aData length] - aOffset < bufferLength)
     {
-        bufferLength = [self.fragment length];
+        bufferLength = [aData length] - aOffset;
+    }
+    if (bufferLength < 0) {
+        return NO;
     }
     unsigned char buffer[bufferLength];
-    [self.fragment getBytes:&buffer length:bufferLength];
+    [aData getBytes:&buffer range:NSMakeRange(aOffset, bufferLength)];
     
     //determine opcode
     if (bufferLength > 0) 
     {
         int index = 0;
         self.isFinal = buffer[index] & 0x80;
+//        NSLog(@"First Byte: %#x", buffer[index]);
         self.opCode = buffer[index++] & 0x0F;
-        
+
         //handle data depending on opcode
         switch (self.opCode) 
         {
@@ -166,7 +182,7 @@
                 //exit if we are missing bytes
                 if (bufferLength < 4)
                 {
-                    return;
+                    return NO;
                 }
                 
                 unsigned short len;
@@ -179,7 +195,7 @@
                 //exit if we are missing bytes
                 if (bufferLength < 10)
                 {
-                    return;
+                    return NO;
                 }
                 
                 unsigned long long len;
@@ -194,7 +210,7 @@
                 //exit if we are missing bytes
                 if (bufferLength < index + 4)
                 {
-                    return;
+                    return NO;
                 }
                 
                 //grab mask
@@ -204,7 +220,18 @@
             
             payloadStart = index;
             payloadLength = dataLength;
+
+            return YES;
         }
+    }
+
+    return NO;
+}
+
+- (void) parseHeader
+{
+    if (self.fragment) {
+        [self parseHeader:self.fragment from:0];
     }
 }
 
@@ -229,22 +256,22 @@
     byte = 0x80;
     
     //payload length
-    unsigned long long fullPayloadLength = [self.payloadData length];
+    unsigned long long fullPayloadLength = self.payloadData.length;
     if (fullPayloadLength <= 125)
     {
         byte |= (fullPayloadLength & 0xFF);
         [temp appendBytes:&byte length:1];
     }
-    else if (fullPayloadLength <= INT16_MAX)
+    else if (fullPayloadLength <= UINT16_MAX)
     {
-        byte |= 126;
+        byte |= (126 & 0xFF);
         [temp appendBytes:&byte length:1];
         short shortLength = htons(fullPayloadLength & 0xFFFF);
         [temp appendBytes:&shortLength length:2];
     }
-    else if (fullPayloadLength <= INT64_MAX)
+    else if (fullPayloadLength <= UINT64_MAX)
     {
-        byte |= 127;
+        byte |= (127 & 0xFF);
         [temp appendBytes:&byte length:1];
         unsigned long long longLength = htonll(fullPayloadLength);
         [temp appendBytes:&longLength length:8];
@@ -287,6 +314,43 @@
     }
     int m = 0;
     NSRange range = NSMakeRange(index, 1);
+    while (index < end)
+    {
+        //set current byte
+        range.location = index;
+        [aData getBytes:&current range:range];
+
+        //mask
+        current ^= maskBytes[m++ % 4];
+
+        //append result & continue
+        [result appendBytes:&current length:1];
+        index++;
+    }
+    return result;
+}
+
+- (void) unmaskInPlace:(int) aMask data:(NSMutableData*) aData range:(NSRange) aRange {
+    [self maskInPlace:aMask data:aData range:aRange];
+}
+
+- (void) maskInPlace:(int) aMask data:(NSMutableData*) aData range:(NSRange) aRange
+{
+    NSMutableData* result = [NSMutableData data];
+    unsigned char maskBytes[4];
+    maskBytes[0] = (int)((aMask >> 24) & 0xFF) ;
+    maskBytes[1] = (int)((aMask >> 16) & 0xFF) ;
+    maskBytes[2] = (int)((aMask >> 8) & 0XFF);
+    maskBytes[3] = (int)((aMask & 0XFF));
+    unsigned char current;
+    int index = aRange.location;
+    int end = aRange.location + aRange.length;
+    if (end > [aData length])
+    {
+        end = [aData length];
+    }
+    int m = 0;
+    NSRange range = NSMakeRange(index, 1);
     while (index < end) 
     {
         //set current byte
@@ -297,10 +361,9 @@
         current ^= maskBytes[m++ % 4];
         
         //append result & continue
-        [result appendBytes:&current length:1];
+        [aData replaceBytesInRange:range withBytes:&current];
         index++;
     }
-    return result;
 }
 
 - (NSData*) unmask:(int) aMask data:(NSData*) aData
