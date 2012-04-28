@@ -34,6 +34,7 @@ typedef NSUInteger WebSocketVersion;
 @interface WebSocketConnectConfig : NSObject
 {
 @private
+    NSTimeInterval keepAlive;
     NSURL* url;
     NSString* origin;
     NSString* host;
@@ -166,6 +167,12 @@ typedef NSUInteger WebSocketVersion;
  * The subprotocol selected by the server, nil if none was selected
  **/
 @property(nonatomic,copy) NSString* serverProtocol;
+
+/**
+* The time interval to send pings on. If zero, no automated pings will be sent. Default is zero.
+**/
+@property(nonatomic, assign) NSTimeInterval keepAlive;
+
 
 + (id) config;
 + (id) configWithURLString:(NSString*) aUrlString origin:(NSString*) aOrigin protocols:(NSArray*) aProtocols tlsSettings:(NSDictionary*) aTlsSettings headers:(NSArray*) aHeaders verifySecurityKey:(BOOL) aVerifySecurityKey extensions:(NSArray*) aExtensions;

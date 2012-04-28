@@ -21,6 +21,7 @@
 
 #import <Foundation/Foundation.h>
 #import "AsyncSocket.h"
+#import "GCDAsyncSocket.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonCryptor.h>
@@ -118,6 +119,7 @@ typedef NSUInteger WebSocketReadyState;
 {
 @protected
     AsyncSocket* socket;
+    GCDAsyncSocket *gcdSocket;
     NSError* closingError;
     NSString* wsSecKey;
     NSString* wsSecKeyHandshake;
@@ -131,6 +133,9 @@ typedef NSUInteger WebSocketReadyState;
     id<WebSocketDelegate> delegate;
     WebSocketReadyState readystate;
     WebSocketConnectConfig* config;
+    dispatch_queue_t wsQueue;
+    dispatch_queue_t delegateQueue;
+    NSTimer* pingTimer;
 }
 
 
@@ -156,6 +161,8 @@ typedef NSUInteger WebSocketReadyState;
 
 + (id) webSocketWithConfig:(WebSocketConnectConfig*) aConfig delegate:(id<WebSocketDelegate>) aDelegate;
 - (id) initWithConfig:(WebSocketConnectConfig*) aConfig delegate:(id<WebSocketDelegate>) aDelegate;
++ (id) webSocketWithConfig:(WebSocketConnectConfig*) aConfig queue:(dispatch_queue_t) aDispatchQueue delegate:(id<WebSocketDelegate>) aDelegate;
+- (id) initWithConfig:(WebSocketConnectConfig*) aConfig queue:(dispatch_queue_t) aDispatchQueue delegate:(id<WebSocketDelegate>) aDelegate;
 
 
 /**
@@ -187,6 +194,7 @@ typedef NSUInteger WebSocketReadyState;
  * Send ping message to the websocket
  */
 - (void) sendPing:(NSData*)message;
+
 
 extern NSString *const WebSocketException;
 extern NSString *const WebSocketErrorDomain;

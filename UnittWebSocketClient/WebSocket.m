@@ -34,6 +34,7 @@ typedef NSUInteger WebSocketWaitingState;
 
 
 @interface WebSocket(Private)
+- (void) repeatPing;
 - (void) dispatchFailure:(NSError*) aError;
 - (void) dispatchClosed:(NSUInteger) aStatusCode message:(NSString*) aMessage error:(NSError*) aError;
 - (void) dispatchOpened;
@@ -291,6 +292,25 @@ WebSocketWaitingState waitingState;
 - (void) continueReadingMessageStream 
 {
     [socket readDataWithTimeout:self.config.timeout tag:TagMessage];
+}
+
+- (void)repeatPing {
+    if (readystate == WebSocketReadyStateOpen) {
+        [self sendPing:nil];
+    }
+}
+
+- (void) startPingTimer {
+    if (self.config.keepAlive) {
+        pingTimer = [NSTimer timerWithTimeInterval:self.config.keepAlive target:self selector:@selector(repeatPing) userInfo:nil repeats:YES];
+    }
+}
+
+- (void) stopPingTimer {
+    if (pingTimer) {
+        [pingTimer invalidate];
+        [pingTimer release];
+    }
 }
 
 - (void) closeSocket
@@ -1011,15 +1031,34 @@ WebSocketWaitingState waitingState;
 {
     if(delegate) 
     {
-        [delegate didReceiveError:aError];
+        if (delegateQueue) {
+            dispatch_async(delegateQueue, ^{
+         				NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+                        [delegate didReceiveError:aError];
+         				[pool drain];
+         			});
+
+        } else {
+            [delegate didReceiveError:aError];
+        }
     }
 }
 
 - (void) dispatchClosed:(NSUInteger) aStatusCode message:(NSString*) aMessage error:(NSError*) aError
 {
+    [self stopPingTimer];
     if (delegate)
     {
-        [delegate didClose:aStatusCode message:aMessage error:aError];
+        if (delegateQueue) {
+            dispatch_async(delegateQueue, ^{
+         				NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+                        [delegate didClose:aStatusCode message:aMessage error:aError];
+         				[pool drain];
+         			});
+
+        } else {
+            [delegate didClose:aStatusCode message:aMessage error:aError];
+        }
     }
 }
 
@@ -1027,15 +1066,34 @@ WebSocketWaitingState waitingState;
 {
     if (delegate) 
     {
-        [delegate didOpen];
+        if (delegateQueue) {
+            dispatch_async(delegateQueue, ^{
+         				NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+                        [delegate didOpen];
+         				[pool drain];
+         			});
+
+        } else {
+            [delegate didOpen];
+        }
     }
+    [self startPingTimer];
 }
 
 - (void) dispatchTextMessageReceived:(NSString*) aMessage 
 {
     if (delegate)
     {
-        [delegate didReceiveTextMessage:aMessage];
+        if (delegateQueue) {
+            dispatch_async(delegateQueue, ^{
+         				NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+                        [delegate didReceiveTextMessage:aMessage];
+         				[pool drain];
+         			});
+
+        } else {
+            [delegate didReceiveTextMessage:aMessage];
+        }
     }
 }
 
@@ -1043,13 +1101,22 @@ WebSocketWaitingState waitingState;
 {
     if (delegate)
     {
-        [delegate didReceiveBinaryMessage:aMessage];
+        if (delegateQueue) {
+            dispatch_async(delegateQueue, ^{
+         				NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+                        [delegate didReceiveBinaryMessage:aMessage];
+         				[pool drain];
+         			});
+
+        } else {
+            [delegate didReceiveBinaryMessage:aMessage];
+        }
     }
 }
 
 
 #pragma mark AsyncSocket Delegate
-- (void) onSocketDidDisconnect:(AsyncSocket*) aSock 
+- (void) onSocketDidDisconnect:(id) aSocket
 {
     readystate = WebSocketReadyStateClosed;
     if (self.config.version > WebSocketVersion07)
@@ -1070,7 +1137,7 @@ WebSocketWaitingState waitingState;
     [self dispatchClosed:closeStatusCode message:closeMessage error:closingError];
 }
 
-- (void)onSocket:(AsyncSocket *) aSocket didSecure:(BOOL) aDidSecure {
+- (void)onSocket:(id) aSocket didSecure:(BOOL) aDidSecure {
     if (self.config.isSecure && !aDidSecure) {
         [self close:WebSocketCloseStatusTlsHandshakeError message:nil];
     }
@@ -1079,7 +1146,7 @@ WebSocketWaitingState waitingState;
     }
 }
 
-- (void) onSocket:(AsyncSocket *) aSocket willDisconnectWithError:(NSError *) aError
+- (void) onSocket:(id) aSocket willDisconnectWithError:(NSError *) aError
 {
     switch (self.readystate) 
     {
@@ -1092,7 +1159,7 @@ WebSocketWaitingState waitingState;
     }
 }
 
-- (void) onSocket:(AsyncSocket*) aSocket didConnectToHost:(NSString*) aHost port:(UInt16) aPort 
+- (void) onSocket:(id) aSocket didConnectToHost:(NSString*) aHost port:(UInt16) aPort
 {
     //start TLS if this is a secure websocket
     if (self.config.isSecure)
@@ -1113,7 +1180,7 @@ WebSocketWaitingState waitingState;
     }
 }
 
-- (void) onSocket:(AsyncSocket*) aSocket didWriteDataWithTag:(long) aTag 
+- (void) onSocket:(id) aSocket didWriteDataWithTag:(long) aTag
 {
     if (aTag == TagHandshake) 
     {
@@ -1121,7 +1188,7 @@ WebSocketWaitingState waitingState;
     }
 }
 
-- (void) onSocket: (AsyncSocket*) aSocket didReadData:(NSData*) aData withTag:(long) aTag 
+- (void) onSocket: (id) aSocket didReadData:(NSData*) aData withTag:(long) aTag
 {
     if (aTag == TagHandshake) 
     {
@@ -1225,6 +1292,10 @@ WebSocketWaitingState waitingState;
     return [[[[self class] alloc] initWithConfig:aConfig delegate:aDelegate] autorelease];
 }
 
++ (id)webSocketWithConfig:(WebSocketConnectConfig *)aConfig queue:(dispatch_queue_t)aDispatchQueue delegate:(id <WebSocketDelegate>)aDelegate {
+    return [[[[self class] alloc] initWithConfig:aConfig queue:aDispatchQueue delegate:aDelegate] autorelease];
+}
+
 - (id) initWithConfig:(WebSocketConnectConfig*) aConfig delegate:(id<WebSocketDelegate>) aDelegate
 {
     self = [super init];
@@ -1234,6 +1305,31 @@ WebSocketWaitingState waitingState;
         self.delegate = aDelegate;
         self.config = aConfig;
         socket = [[AsyncSocket alloc] initWithDelegate:self];
+        pendingFragments = [[MutableQueue alloc] init];
+        isClosing = NO;
+    }
+    return self;
+}
+
+- (id)initWithConfig:(WebSocketConnectConfig *)aConfig queue:(dispatch_queue_t)aDispatchQueue delegate:(id <WebSocketDelegate>)aDelegate {
+    self = [super init];
+    if (self)
+    {
+        //apply properties
+        self.delegate = aDelegate;
+        self.config = aConfig;
+        CFUUIDRef	uuidObj = CFUUIDCreate(nil);
+        NSString	*uuidString = (NSString*)CFUUIDCreateString(nil, uuidObj);
+        CFRelease(uuidObj);
+        NSString * gcdSocketQueueName = [NSString stringWithFormat:@"com.unitt.ws.socket:%@", uuidString];
+        NSString * gcdDelegateQueueName = [NSString stringWithFormat:@"com.unitt.ws.delegate:%@", uuidString];
+        dispatch_queue_t gcdSocketQueue = dispatch_queue_create([gcdSocketQueueName cStringUsingEncoding:NSASCIIStringEncoding], NULL);
+        dispatch_queue_t gcdDelegateQueue = dispatch_queue_create([gcdDelegateQueueName cStringUsingEncoding:NSASCIIStringEncoding], NULL);
+        gcdSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:gcdDelegateQueue socketQueue:gcdSocketQueue];
+        dispatch_release(gcdSocketQueue);
+        dispatch_release(gcdDelegateQueue);
+        delegateQueue = aDispatchQueue;
+        dispatch_retain(delegateQueue);
         pendingFragments = [[MutableQueue alloc] init];
         isClosing = NO;
     }
@@ -1252,6 +1348,11 @@ WebSocketWaitingState waitingState;
     [wsSecKey release];
     [wsSecKeyHandshake release];
     [config release];
+    [gcdSocket release];
+    if (delegateQueue) {
+        dispatch_release(delegateQueue);
+    }
+    [pingTimer release];
     [super dealloc];
 }
 

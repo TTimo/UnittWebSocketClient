@@ -50,6 +50,7 @@
 @synthesize headers;
 @synthesize extensions;
 @synthesize serverExtensions;
+@synthesize keepAlive;
 
 
 NSString* const WebSocketConnectConfigException = @"WebSocketConnectConfigException";
