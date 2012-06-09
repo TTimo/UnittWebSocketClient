@@ -98,7 +98,11 @@ WebSocketWaitingState waitingState;
     BOOL successful = false;
     @try 
     {
-        successful = [socket connectToHost:self.config.url.host onPort:port error:&error];
+        if (gcdSocket) {
+            successful = [gcdSocket connectToHost:self.config.url.host onPort:port error:&error];
+        } else if (socket) {
+            successful = [socket connectToHost:self.config.url.host onPort:port error:&error];
+        }
         if (self.config.version == WebSocketVersion07)
         {
             closeStatusCode = WebSocketCloseStatusNormal;
@@ -283,7 +287,11 @@ WebSocketWaitingState waitingState;
 {
     if (!isClosing || aFragment.opCode == MessageOpCodeClose)
     {
-        [socket writeData:aFragment.fragment withTimeout:self.config.timeout tag:TagMessage];
+        if (gcdSocket) {
+            [gcdSocket writeData:aFragment.fragment withTimeout:self.config.timeout tag:TagMessage];
+        } else if (socket) {
+            [socket writeData:aFragment.fragment withTimeout:self.config.timeout tag:TagMessage];
+        }
     }
 }
 
@@ -291,7 +299,11 @@ WebSocketWaitingState waitingState;
 #pragma mark Internal Web Socket Logic
 - (void) continueReadingMessageStream 
 {
-    [socket readDataWithTimeout:self.config.timeout tag:TagMessage];
+    if (gcdSocket) {
+        [gcdSocket readDataWithTimeout:self.config.timeout tag:TagMessage];
+    } else if (socket) {
+        [socket readDataWithTimeout:self.config.timeout tag:TagMessage];
+    }
 }
 
 - (void)repeatPing {
@@ -316,7 +328,11 @@ WebSocketWaitingState waitingState;
 - (void) closeSocket
 {
     readystate = WebSocketReadyStateClosing;
-    [socket disconnectAfterWriting];
+    if (gcdSocket) {
+        [gcdSocket disconnectAfterWriting];
+    } else if (socket) {
+        [socket disconnectAfterWriting];
+    }
 }
 
 - (void) handleCompleteFragment:(WebSocketFragment*) aFragment
@@ -369,7 +385,11 @@ WebSocketWaitingState waitingState;
             [self handleClose:aFragment];
             break;
         case MessageOpCodePing:
-            [self handlePing:aFragment.payloadData];
+            if (aFragment.payloadLength > 125) {
+                [self close:WebSocketCloseStatusProtocolError message:@"Pings cannot have payloads longer than 125 octets."];
+            } else {
+                [self handlePing:aFragment.payloadData];
+            }
             break;
     }
 }
@@ -463,6 +483,8 @@ WebSocketWaitingState waitingState;
 
 - (void) handlePing:(NSData*) aMessage
 {
+    NSString* message = [[[NSString alloc] initWithData:aMessage encoding:NSUTF8StringEncoding] autorelease];
+    NSLog(@"onPing: %@", message);
     [self sendMessage:aMessage messageWithOpCode:MessageOpCodePong];
     if ([delegate respondsToSelector:@selector(didSendPong:)])
     {
@@ -473,11 +495,11 @@ WebSocketWaitingState waitingState;
 // TODO: use a temporary buffer for the fragment payload instead of a queue of fragments
 - (int) handleMessageData:(NSData*) aData offset:(NSUInteger) aOffset
 {
-//    if (aOffset == 0) {
-//        NSLog(@"HandleMessageData(%u):%@", aOffset, aData);
-//    } else {
-//        NSLog(@"Recursive HandleMessageData(%u):%@", aOffset, [aData subdataWithRange:NSMakeRange(aOffset, aData.length - aOffset)]);
-//    }
+    if (aOffset == 0) {
+        NSLog(@"HandleMessageData(%u):%@", aOffset, aData);
+    } else {
+        NSLog(@"Recursive HandleMessageData(%u):%@", aOffset, [aData subdataWithRange:NSMakeRange(aOffset, aData.length - aOffset)]);
+    }
     //init
     NSUInteger lengthOfRemainder = 0;
     NSUInteger existingLength = 0;
@@ -500,6 +522,15 @@ WebSocketWaitingState waitingState;
     }
     NSAssert(fragment != nil, @"Websocket fragment should never be nil");
 
+    //validate reserved bits
+    if (!self.config.activeExtensionModifiesReservedBits) {
+        NSLog(@"Testing for reserved bits...");
+        if (fragment.isReservedBitSet) {
+            NSLog(@"Closing due to illegally setting reserved bits.");
+            [self close:WebSocketCloseStatusProtocolError message:@"No extension is defined that modifies reserved bits."];
+        }
+    }
+
     //if we dont know the length - try to figure it out
     if (!fragment.isHeaderValid) {
         [fragment parseHeader];
@@ -515,6 +546,18 @@ WebSocketWaitingState waitingState;
                 }
                 return offset;
             }
+        }
+    }
+
+    //make sure we have a valid op code
+    if (fragment.opCode !=  MessageOpCodeContinuation && fragment.opCode != MessageOpCodeText && fragment.opCode != MessageOpCodeBinary && fragment.opCode != MessageOpCodeClose && fragment.opCode != MessageOpCodePing && fragment.opCode != MessageOpCodePong) {
+        [self close:WebSocketCloseStatusProtocolError message:@"Illegal Opcode"];
+    }
+
+    //disallow fragmented control op codes
+    if (fragment.opCode == MessageOpCodePing || fragment.opCode == MessageOpCodePong) {
+        if (!fragment.isFinal) {
+            [self close:WebSocketCloseStatusProtocolError message:@"Control frames cannot be fragmented"];
         }
     }
 
@@ -916,7 +959,7 @@ WebSocketWaitingState waitingState;
     return false;
 }
 
-- (void) sendHandshake:(AsyncSocket*) aSocket
+- (void) sendHandshake:(id) aSocket
 {
         //continue with handshake
         NSString *requestPath = self.config.url.path;
@@ -1172,8 +1215,12 @@ WebSocketWaitingState waitingState;
         {
             settings = [NSMutableDictionary dictionaryWithCapacity:3];
         }
-        
-        [socket startTLS:settings];
+
+        if (gcdSocket) {
+            [gcdSocket startTLS:settings];
+        } else if (socket) {
+            [socket startTLS:settings];
+        }
     }
     else {
         [self sendHandshake:aSocket];
@@ -1348,6 +1395,7 @@ WebSocketWaitingState waitingState;
     [wsSecKey release];
     [wsSecKeyHandshake release];
     [config release];
+    [gcdSocket disconnect];
     [gcdSocket release];
     if (delegateQueue) {
         dispatch_release(delegateQueue);

@@ -25,6 +25,7 @@ typedef NSUInteger AutobahnTestState;
     int currentTest;
     AutobahnTestState testState;
     NSArray* testNames;
+    dispatch_queue_t delegateQueue;
 }
 
 

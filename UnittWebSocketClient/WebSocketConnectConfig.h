@@ -51,6 +51,7 @@ typedef NSUInteger WebSocketVersion;
     NSMutableArray* serverHeaders;
     NSMutableArray* extensions;
     NSMutableArray* serverExtensions;
+    BOOL activeExtensionModifiesReservedBits;
 }
 
 /**
@@ -172,6 +173,11 @@ typedef NSUInteger WebSocketVersion;
 * The time interval to send pings on. If zero, no automated pings will be sent. Default is zero.
 **/
 @property(nonatomic, assign) NSTimeInterval keepAlive;
+
+/**
+* Indicates whether an active extension should be allowed to modify the reserved bits. Default is false;
+*/
+@property(nonatomic, assign) BOOL activeExtensionModifiesReservedBits;
 
 
 + (id) config;

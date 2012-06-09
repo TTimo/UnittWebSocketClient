@@ -51,6 +51,7 @@
 @synthesize extensions;
 @synthesize serverExtensions;
 @synthesize keepAlive;
+@synthesize activeExtensionModifiesReservedBits;
 
 
 NSString* const WebSocketConnectConfigException = @"WebSocketConnectConfigException";

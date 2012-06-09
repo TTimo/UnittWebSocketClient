@@ -70,6 +70,7 @@ typedef NSInteger PayloadLength;
 @property (nonatomic,readonly) BOOL isValid;
 @property (nonatomic,readonly) BOOL canBeParsed;
 @property (nonatomic,readonly) BOOL isHeaderValid;
+@property (nonatomic,readonly) BOOL isReservedBitSet;
 @property (nonatomic,assign) int mask;
 @property (nonatomic,assign) MessageOpCode opCode;
 @property (nonatomic,retain) NSData* payloadData;
@@ -92,6 +93,9 @@ typedef NSInteger PayloadLength;
 - (void) parseHeader;
 - (BOOL) parseHeader:(NSData*) aData from:(NSUInteger) aOffset;
 - (void) parseContent;
+
+- (BOOL)isReservedBitSet:(NSData *)aData from:(NSUInteger)aOffset;
+
 - (BOOL) parseContent:(NSData*) aData;
 
 - (void) buildFragment;

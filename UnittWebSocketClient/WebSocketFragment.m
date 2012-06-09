@@ -90,6 +90,11 @@
     return payloadStart;
 }
 
+- (BOOL)isReservedBitSet {
+    return [self isReservedBitSet:self.fragment from:0];
+}
+
+
 - (BOOL) isDataValid
 {
     return self.payloadData && [self.payloadData length];
@@ -135,6 +140,29 @@
     if (self.fragment) {
         [self parseContent:self.fragment];
     }
+}
+
+
+- (BOOL) isReservedBitSet:(NSData *) aData from:(NSUInteger) aOffset {
+    //get header data bits
+    int bufferLength = 1;
+    if ([aData length] - aOffset < bufferLength)
+    {
+        bufferLength = [aData length] - aOffset;
+    }
+    if (bufferLength < 0) {
+        return NO;
+    }
+    unsigned char buffer[bufferLength];
+    [aData getBytes:&buffer range:NSMakeRange(aOffset, bufferLength)];
+
+    //determine reserved bit values
+    if (bufferLength > 0)
+    {
+        return buffer[0] & 0x70;
+    }
+
+    return NO;
 }
 
 - (BOOL) parseHeader:(NSData *) aData from:(NSUInteger) aOffset {
