@@ -19,6 +19,7 @@
 		282791521476E8E500BC1CC7 /* WebSocket.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BD353E801432249700B77063 /* WebSocket.h */; };
 		282791531476E8E500BC1CC7 /* WebSocketConnectConfig.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BD353E821432249700B77063 /* WebSocketConnectConfig.h */; };
 		282791541476E8E500BC1CC7 /* HandshakeHeader.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BDBB5A1A14391F7800B651B8 /* HandshakeHeader.h */; };
+		BD0589721584E96500F0B894 /* GCDAsyncSocket.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = BDF1209113AEEFE600AD997E /* GCDAsyncSocket.h */; };
 		BD0C324C136FA7CB008B53D7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD0C324B136FA7CB008B53D7 /* Foundation.framework */; };
 		BD0C3258136FA7CB008B53D7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD0C324B136FA7CB008B53D7 /* Foundation.framework */; };
 		BD0C325D136FA7CB008B53D7 /* libUnittWebSocketClient.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BD0C3248136FA7CB008B53D7 /* libUnittWebSocketClient.a */; };
@@ -84,6 +85,7 @@
 			dstPath = Headers;
 			dstSubfolderSpec = 16;
 			files = (
+				BD0589721584E96500F0B894 /* GCDAsyncSocket.h in CopyFiles */,
 				282791491476E8E500BC1CC7 /* MutableQueue.h in CopyFiles */,
 				2827914A1476E8E500BC1CC7 /* NSData+Base64.h in CopyFiles */,
 				2827914B1476E8E500BC1CC7 /* AsyncSocket.h in CopyFiles */,
