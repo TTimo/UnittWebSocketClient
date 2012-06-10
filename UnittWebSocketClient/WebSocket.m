@@ -132,6 +132,7 @@ WebSocketWaitingState waitingState;
         else {
             closeStatusCode = 0;
         }
+        [closeMessage release];
         closeMessage = nil;
     }
     @catch (NSException *exception) {
@@ -189,7 +190,7 @@ WebSocketWaitingState waitingState;
         current = (unsigned char) (aStatusCode % 0x100);
         [payload appendBytes:&current length:1];
         if (aMessage) {
-            closeMessage = aMessage;
+            closeMessage = [aMessage copy];
             [payload appendData:[aMessage dataUsingEncoding:NSUTF8StringEncoding]];
         }
     }
@@ -475,9 +476,9 @@ WebSocketWaitingState waitingState;
             if (![fragment parseHeader:aData from:aOffset]) {
                 //if we still don't have a valid length, append all data and return
                 if (fragment.fragment) {
-                    [fragment.fragment appendData:aData];
+                    [fragment.fragment appendData:[aData subdataWithRange:NSMakeRange(aOffset, aData.length - aOffset)]];
                 } else {
-                    fragment.fragment = [NSMutableData dataWithData:aData];
+                    fragment.fragment = [NSMutableData dataWithData:[aData subdataWithRange:NSMakeRange(aOffset, aData.length - aOffset)]];
                 }
                 return offset;
             }
@@ -524,10 +525,6 @@ WebSocketWaitingState waitingState;
         actualDataLength = possibleDataLength - lengthOfRemainder;
     }
 
-    //append actual data
-    if (actualDataLength + aOffset > aData.length) {
-        NSLog(@"*** ERROR: Length is an illegal value {calculatedLength=%i, offset=%i, dataLength=%i, existingLength=%i, fragmentLength=%i}", actualDataLength, aOffset, aData.length, existingLength, fragment.messageLength);
-    }
     unsigned char *actualData = malloc(actualDataLength);
     [aData getBytes:actualData range:NSMakeRange(aOffset, actualDataLength)];
     if (fragment.fragment) {
@@ -548,11 +545,6 @@ WebSocketWaitingState waitingState;
             return offset;
         }
         [fragment parseContent];
-
-        //@kill
-        if (fragment.isValid) {
-            NSLog(@"Fragment: isFinal=%@, opCode=%i, fragment=%@", fragment.isFinal ? @"YES" : @"NO", fragment.opCode, fragment);
-        }
 
         //if we have a complete fragment, handle it
         if (fragment.isValid && fragment.isFinal) {

@@ -146,14 +146,15 @@
     //get header data bits
     int bufferLength = 14;
 
-    NSData* data;
+    NSData* data = aData;
 
     //do we have an existing fragment to work with
     if (self.fragment) {
-        if (self.fragment.length >= 14) {
+        if (self.fragment.length >= bufferLength) {
             data = self.fragment;
         } else {
             NSMutableData* both = [NSMutableData dataWithData:self.fragment];
+            //@todo: handle when data is 16 bytes - i.e. longer than buffer length
             if (aData.length - aOffset >= bufferLength - both.length) {
                 [both appendData:[aData subdataWithRange:NSMakeRange(aOffset, bufferLength - both.length)]];
             } else {
@@ -161,13 +162,11 @@
             }
             data = both;
         }
-    } else {
-        data = aData;
     }
 
-    if ([data length] - aOffset < bufferLength)
+    if (data.length - aOffset < bufferLength)
     {
-        bufferLength = [data length] - aOffset;
+        bufferLength = data.length - aOffset;
     }
     if (bufferLength < 0) {
         return NO;
