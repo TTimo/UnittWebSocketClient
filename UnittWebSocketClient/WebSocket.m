@@ -1001,11 +1001,8 @@ WebSocketWaitingState waitingState;
     [self dispatchClosed:closeStatusCode message:closeMessage error:closingError];
 }
 
-- (void)onSocket:(id)aSocket didSecure:(BOOL)aDidSecure {
-    if (self.config.isSecure && !aDidSecure) {
-        [self close:WebSocketCloseStatusTlsHandshakeError message:nil];
-    }
-    else {
+- (void)onSocket:(id)aSocket didSecure:(id) aSocket {
+    if (self.config.isSecure) {
         [self sendHandshake:aSocket];
     }
 }
