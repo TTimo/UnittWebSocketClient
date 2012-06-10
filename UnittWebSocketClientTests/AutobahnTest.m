@@ -87,6 +87,11 @@
     }
 }
 
+- (void)didSendPong:(NSData *)aMessage {
+    NSLog(@"Sending pong of length %i...", aMessage.length);
+}
+
+
 
 #pragma mark Test
 - (int) getIndexOfTest:(NSString *) aName {
@@ -122,8 +127,38 @@
 }
 
 
-- (void) testNamedCase {
-    NSString* nameOfTestToRun = @"1.1.6";
+- (void) notestNamedCaseRepeatedly {
+    NSString* nameOfTestToRun = @"2.11";
+    int timesToRun = 100;
+
+    //setup web socket
+    self.testState = AutobahnTestStateExecutingTest;
+    self.ws = nil;
+    self.currentTest = [self getIndexOfTest:nameOfTestToRun];
+    if (self.currentTest < 0) {
+        STFail(@"Did not find the test named: %@", nameOfTestToRun);
+        return;
+    }
+    int testToRun = self.currentTest;
+
+    for (int i = 0; i < timesToRun; i++) {
+        self.totalTests = self.currentTest + 1;
+        [self runNextTest];
+
+        //keep running until we are done
+        while (self.currentTest <= self.totalTests) {
+            [self waitForSeconds:5];
+        }
+
+        self.currentTest = testToRun;
+        self.testState = AutobahnTestStateExecutingTest;
+        self.ws = nil;
+    }
+
+}
+
+- (void) notestNamedCase {
+    NSString* nameOfTestToRun = @"2.11";
 
     //setup web socket
     self.testState = AutobahnTestStateExecutingTest;
@@ -142,7 +177,7 @@
     }
 }
 
-- (void) notestAllCases {
+- (void) testAllCases {
     //open web socket
     [self.ws open];
 
@@ -157,10 +192,12 @@
     self.currentTest++;
     self.testState = AutobahnTestStateExecutingTest;
     if (self.currentTest <= self.totalTests) {
+        NSLog(@"----------------------------------------------------------------");
         if (self.currentTest == 1) {
             NSLog(@"Running first test...");
         }
         NSLog(@"Running test (%i): %@", self.currentTest, testToRun);
+        NSLog(@"----------------------------------------------------------------");
         self.config.url = [NSURL URLWithString:[NSString stringWithFormat:@"ws://localhost:9001/runCase?case=%i&agent=%@", self.currentTest, @"UnitT"]];
         self.config.maxPayloadSize = UINT32_MAX;
         self.config.timeout = 600.0;
@@ -190,6 +227,7 @@
     [config release];
     [super dealloc];
     dispatch_release(delegateQueue);
+    [super dealloc];
 }
 
 

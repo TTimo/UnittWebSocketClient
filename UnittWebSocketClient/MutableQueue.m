@@ -53,6 +53,11 @@
     return [items lastObject];
 }
 
+- (void) removeLastObject {
+    [items removeLastObject];
+}
+
+
 #pragma mark Lifecycle
 - (id) init 
 {

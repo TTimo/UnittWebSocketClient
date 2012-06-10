@@ -28,7 +28,9 @@
 #define ntohll(x) __DARWIN_OSSwapInt64(x) 
 #endif
 
-@implementation WebSocketFragment
+@implementation WebSocketFragment {
+}
+
 
 @synthesize isFinal;
 @synthesize mask;
@@ -36,9 +38,14 @@
 @synthesize payloadData;
 @synthesize payloadType;
 @synthesize fragment;
-@synthesize messageLength;
 @synthesize payloadLength;
 @synthesize payloadStart;
+@synthesize isRSV1;
+@synthesize isRSV2;
+@synthesize isRSV3;
+
+
+
 
 
 #pragma mark Properties
@@ -87,13 +94,8 @@
 
 - (BOOL) isHeaderValid
 {
-    return payloadStart;
+    return payloadStart > 0;
 }
-
-- (BOOL)isReservedBitSet {
-    return [self isReservedBitSet:self.fragment from:0];
-}
-
 
 - (BOOL) isDataValid
 {
@@ -113,26 +115,23 @@
 
 #pragma mark Parsing
 - (BOOL) parseContent:(NSData *) aData {
-    if ([self.fragment length] >= payloadStart + payloadLength)
+    if ([aData length] >= payloadStart + payloadLength)
     {
         //set payload
         if (self.hasMask)
         {
-            self.payloadData = [self unmask:self.mask data:self.fragment range:NSMakeRange(payloadStart, payloadLength)];
+            self.payloadData = [self unmask:self.mask data:aData range:NSMakeRange(payloadStart, payloadLength)];
         }
         else
         {
-            self.payloadData = [self.fragment subdataWithRange:NSMakeRange(payloadStart, payloadLength)];
+            self.payloadData = [aData subdataWithRange:NSMakeRange(payloadStart, payloadLength)];
         }
 
-        //trim fragment, if necessary
-//        if ([self.fragment length] > self.messageLength)
-//        {
-//            self.fragment = [NSMutableData dataWithData:[self.fragment subdataWithRange:NSMakeRange(0, self.messageLength)]];
-//        }
         self.fragment = nil;
+        return YES;
     }
 
+    return NO;
 }
 
 - (void) parseContent
@@ -143,47 +142,47 @@
 }
 
 
-- (BOOL) isReservedBitSet:(NSData *) aData from:(NSUInteger) aOffset {
-    //get header data bits
-    int bufferLength = 1;
-    if ([aData length] - aOffset < bufferLength)
-    {
-        bufferLength = [aData length] - aOffset;
-    }
-    if (bufferLength < 0) {
-        return NO;
-    }
-    unsigned char buffer[bufferLength];
-    [aData getBytes:&buffer range:NSMakeRange(aOffset, bufferLength)];
-
-    //determine reserved bit values
-    if (bufferLength > 0)
-    {
-        return buffer[0] & 0x70;
-    }
-
-    return NO;
-}
-
 - (BOOL) parseHeader:(NSData *) aData from:(NSUInteger) aOffset {
     //get header data bits
     int bufferLength = 14;
-    if ([aData length] - aOffset < bufferLength)
+
+    NSData* data;
+
+    //do we have an existing fragment to work with
+    if (self.fragment) {
+        if (self.fragment.length >= 14) {
+            data = self.fragment;
+        } else {
+            NSMutableData* both = [NSMutableData dataWithData:self.fragment];
+            if (aData.length - aOffset >= bufferLength - both.length) {
+                [both appendData:[aData subdataWithRange:NSMakeRange(aOffset, bufferLength - both.length)]];
+            } else {
+                [both appendData:aData];
+            }
+            data = both;
+        }
+    } else {
+        data = aData;
+    }
+
+    if ([data length] - aOffset < bufferLength)
     {
-        bufferLength = [aData length] - aOffset;
+        bufferLength = [data length] - aOffset;
     }
     if (bufferLength < 0) {
         return NO;
     }
     unsigned char buffer[bufferLength];
-    [aData getBytes:&buffer range:NSMakeRange(aOffset, bufferLength)];
+    [data getBytes:&buffer range:NSMakeRange(aOffset, bufferLength)];
     
     //determine opcode
     if (bufferLength > 0) 
     {
         int index = 0;
         self.isFinal = buffer[index] & 0x80;
-//        NSLog(@"First Byte: %#x", buffer[index]);
+        self.isRSV1 = buffer[index] & 0x40;
+        self.isRSV2 = buffer[index] & 0x20;
+        self.isRSV3 = buffer[index] & 0x10;
         self.opCode = buffer[index++] & 0x0F;
 
         //handle data depending on opcode
@@ -259,7 +258,7 @@
 - (void) parseHeader
 {
     if (self.fragment) {
-        [self parseHeader:self.fragment from:0];
+        [self parseHeader:nil from:0];
     }
 }
 
@@ -364,7 +363,6 @@
 
 - (void) maskInPlace:(int) aMask data:(NSMutableData*) aData range:(NSRange) aRange
 {
-    NSMutableData* result = [NSMutableData data];
     unsigned char maskBytes[4];
     maskBytes[0] = (int)((aMask >> 24) & 0xFF) ;
     maskBytes[1] = (int)((aMask >> 16) & 0xFF) ;

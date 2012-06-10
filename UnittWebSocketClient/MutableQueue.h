@@ -30,5 +30,6 @@
 - (id) dequeue;
 - (void) enqueue:(id) aObject;
 - (id) lastObject;
+- (void) removeLastObject;
 
 @end
