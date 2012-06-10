@@ -298,7 +298,7 @@ WebSocketWaitingState waitingState;
 
 - (void)startPingTimer {
     if (self.config.keepAlive) {
-        pingTimer = [NSTimer timerWithTimeInterval:self.config.keepAlive target:self selector:@selector(repeatPing) userInfo:nil repeats:YES];
+        pingTimer = [NSTimer scheduledTimerWithTimeInterval:self.config.keepAlive target:self selector:@selector(repeatPing) userInfo:nil repeats:YES];
     }
 }
 
