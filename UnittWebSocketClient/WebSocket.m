@@ -305,7 +305,6 @@ WebSocketWaitingState waitingState;
 - (void)stopPingTimer {
     if (pingTimer) {
         [pingTimer invalidate];
-        [pingTimer release];
     }
 }
 
