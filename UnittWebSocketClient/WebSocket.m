@@ -1000,7 +1000,7 @@ WebSocketWaitingState waitingState;
     [self dispatchClosed:closeStatusCode message:closeMessage error:closingError];
 }
 
-- (void)onSocket:(id)aSocket didSecure:(id) aSocket {
+- (void)onSocketDidSecure:(id)aSocket;{
     if (self.config.isSecure) {
         [self sendHandshake:aSocket];
     }
