@@ -1006,6 +1006,14 @@ WebSocketWaitingState waitingState;
     }
 }
 
+- (NSTimeInterval)onSocket:(AsyncSocket*)sock shouldTimeoutReadWithTag:(long)tag elapsed:(NSTimeInterval)elapsed bytesDone:(NSUInteger)length {
+    return self.config.timeout;
+}
+
+- (NSTimeInterval)onSocket:(AsyncSocket*)sock shouldTimeoutWriteWithTag:(long)tag elapsed:(NSTimeInterval)elapsed bytesDone:(NSUInteger)length {
+    return self.config.timeout;
+}
+
 - (void)onSocket:(id)aSocket willDisconnectWithError:(NSError *)aError {
     switch (self.readystate) {
         case WebSocketReadyStateOpen:
