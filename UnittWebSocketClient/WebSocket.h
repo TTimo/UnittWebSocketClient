@@ -21,7 +21,6 @@
 
 #import <Foundation/Foundation.h>
 #import "AsyncSocket.h"
-#import "GCDAsyncSocket.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonCryptor.h>
@@ -119,7 +118,6 @@ typedef NSUInteger WebSocketReadyState;
 {
 @protected
     AsyncSocket* socket;
-    GCDAsyncSocket *gcdSocket;
     NSError* closingError;
     NSString* wsSecKey;
     NSString* wsSecKeyHandshake;
@@ -133,7 +131,6 @@ typedef NSUInteger WebSocketReadyState;
     id<WebSocketDelegate> delegate;
     WebSocketReadyState readystate;
     WebSocketConnectConfig* config;
-    dispatch_queue_t wsQueue;
     dispatch_queue_t delegateQueue;
     NSTimer* pingTimer;
 }

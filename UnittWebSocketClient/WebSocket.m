@@ -121,11 +121,7 @@ WebSocketWaitingState waitingState;
     NSError *error = nil;
     BOOL successful = false;
     @try {
-        if (gcdSocket) {
-            successful = [gcdSocket connectToHost:self.config.url.host onPort:port error:&error];
-        } else if (socket) {
-            successful = [socket connectToHost:self.config.url.host onPort:port error:&error];
-        }
+        successful = [socket connectToHost:self.config.url.host onPort:port error:&error];
         if (self.config.version == WebSocketVersion07) {
             closeStatusCode = WebSocketCloseStatusNormal;
         }
@@ -272,22 +268,14 @@ WebSocketWaitingState waitingState;
 
 - (void)sendMessage:(WebSocketFragment *)aFragment {
     if (!isClosing || aFragment.opCode == MessageOpCodeClose) {
-        if (gcdSocket) {
-            [gcdSocket writeData:aFragment.fragment withTimeout:self.config.timeout tag:TagMessage];
-        } else if (socket) {
-            [socket writeData:aFragment.fragment withTimeout:self.config.timeout tag:TagMessage];
-        }
+        [socket writeData:aFragment.fragment withTimeout:self.config.timeout tag:TagMessage];
     }
 }
 
 
 #pragma mark Internal Web Socket Logic
 - (void)continueReadingMessageStream {
-    if (gcdSocket) {
-        [gcdSocket readDataWithTimeout:self.config.timeout tag:TagMessage];
-    } else if (socket) {
-        [socket readDataWithTimeout:self.config.timeout tag:TagMessage];
-    }
+    [socket readDataWithTimeout:self.config.timeout tag:TagMessage];
 }
 
 - (void)repeatPing {
@@ -310,11 +298,7 @@ WebSocketWaitingState waitingState;
 
 - (void)closeSocket {
     readystate = WebSocketReadyStateClosing;
-    if (gcdSocket) {
-        [gcdSocket disconnectAfterWriting];
-    } else if (socket) {
-        [socket disconnectAfterWriting];
-    }
+    [socket disconnectAfterWriting];
 }
 
 - (void)handleCompleteFragment:(WebSocketFragment *)aFragment {
@@ -1036,11 +1020,7 @@ WebSocketWaitingState waitingState;
             settings = [NSMutableDictionary dictionaryWithCapacity:3];
         }
 
-        if (gcdSocket) {
-            [gcdSocket startTLS:settings];
-        } else if (socket) {
-            [socket startTLS:settings];
-        }
+        [socket startTLS:settings];
     }
     else {
         [self sendHandshake:aSocket];
@@ -1165,16 +1145,7 @@ WebSocketWaitingState waitingState;
         //apply properties
         self.delegate = aDelegate;
         self.config = aConfig;
-        CFUUIDRef uuidObj = CFUUIDCreate(nil);
-        NSString *uuidString = (NSString *) CFUUIDCreateString(nil, uuidObj);
-        CFRelease(uuidObj);
-        NSString *gcdSocketQueueName = [NSString stringWithFormat:@"com.unitt.ws.socket:%@", uuidString];
-        NSString *gcdDelegateQueueName = [NSString stringWithFormat:@"com.unitt.ws.delegate:%@", uuidString];
-        dispatch_queue_t gcdSocketQueue = dispatch_queue_create([gcdSocketQueueName cStringUsingEncoding:NSASCIIStringEncoding], NULL);
-        dispatch_queue_t gcdDelegateQueue = dispatch_queue_create([gcdDelegateQueueName cStringUsingEncoding:NSASCIIStringEncoding], NULL);
-        gcdSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:gcdDelegateQueue socketQueue:gcdSocketQueue];
-        dispatch_release(gcdSocketQueue);
-        dispatch_release(gcdDelegateQueue);
+        socket = [[AsyncSocket alloc] initWithDelegate:self];
         delegateQueue = aDispatchQueue;
         dispatch_retain(delegateQueue);
         pendingFragments = [[MutableQueue alloc] init];
@@ -1195,8 +1166,6 @@ WebSocketWaitingState waitingState;
     [wsSecKey release];
     [wsSecKeyHandshake release];
     [config release];
-    [gcdSocket disconnect];
-    [gcdSocket release];
     if (delegateQueue) {
         dispatch_release(delegateQueue);
     }
