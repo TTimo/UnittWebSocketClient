@@ -975,8 +975,12 @@ WebSocketWaitingState waitingState;
 
 #pragma mark GCDAsyncSocket Delegate
 - (void)socketDidDisconnect:(GCDAsyncSocket*)aSocket withError:(NSError*)aError {
+    if (readystate != WebSocketReadyStateClosing && readystate != WebSocketReadyStateClosed) {
+        closingError = [aError retain];
+    } else {
+        closingError = nil;
+    }
     readystate = WebSocketReadyStateClosed;
-    closingError = [aError retain];
     if (self.config.version > WebSocketVersion07) {
         if (closeStatusCode == 0) {
             if (closingError != nil) {
