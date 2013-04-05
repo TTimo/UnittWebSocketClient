@@ -111,6 +111,11 @@ typedef NSUInteger WebSocketReadyState;
  **/
 - (void) didSendPong:(NSData*) aMessage;
 
+/**
+ * Called when pong is received.
+ **/
+- (void) didReceivePong:(NSData*) aMessage;
+
 @end
 
 

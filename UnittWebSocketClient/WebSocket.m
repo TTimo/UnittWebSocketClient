@@ -22,7 +22,6 @@
 #import "WebSocketFragment.h"
 #import "HandshakeHeader.h"
 
-
 enum {
     WebSocketWaitingStateMessage = 0, //Starting on waiting for a new message
     WebSocketWaitingStateHeader = 1, //Waiting for the remaining header bytes
@@ -33,6 +32,7 @@ typedef NSUInteger WebSocketWaitingState;
 
 
 @interface WebSocket (Private)
+
 - (void)repeatPing;
 
 - (void)dispatchFailure:(NSError *)aError;
@@ -286,7 +286,11 @@ WebSocketWaitingState waitingState;
 
 - (void)startPingTimer {
     if (self.config.keepAlive) {
+        // FIXME: not working. The Apple docs says repeatPing should have one parameter (the timer), which I tried and causes a failure (invalid selector), so sticking to repeatPing with no parameter.
         pingTimer = [NSTimer scheduledTimerWithTimeInterval:self.config.keepAlive target:self selector:@selector(repeatPing) userInfo:nil repeats:YES];
+        NSAssert( [pingTimer isValid], @"Timer is not valid" );
+        // This manual trigger works. But the timer doesn't fire on it's own :(
+        [pingTimer fire];
     }
 }
 
@@ -344,6 +348,14 @@ WebSocketWaitingState waitingState;
             } else {
                 [self handlePing:aFragment.payloadData];
             }
+            break;
+        case MessageOpCodePong:
+            if ([delegate respondsToSelector:@selector(didReceivePong:)]) {
+                [delegate didReceivePong:aFragment.payloadData];
+            }
+            break;
+        default:
+            NSLog( @"unknown opcode %d", aFragment.opCode );
             break;
     }
 }
