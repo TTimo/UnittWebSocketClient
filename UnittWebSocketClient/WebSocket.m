@@ -1180,7 +1180,9 @@ WebSocketWaitingState waitingState;
     if (delegateQueue) {
         dispatch_release(delegateQueue);
     }
-    [pingTimer release];
+    // consider converting to ARC?
+    // commented out to avoid - was over-releasing maybe?
+//    [pingTimer release];
     [super dealloc];
 }
 
